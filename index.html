@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 7.8.5 - Edición Nube</title>
+<title>Gestión Total 9.0 - Edición Nube</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -35,6 +35,7 @@ header { border-bottom: 2px solid #0026ff; padding-bottom: 10px; margin-bottom: 
 .card p { margin: 8px 0 0; font-size: 1.1rem; font-weight: bold; }
 
 .profit { color: #25D366; } .expense { color: #ff3b3b; } .adj-color { color: #0026ff; } .bank-color { color: #0026ff; } .cash-color { color: #25D366; }
+.aguinaldo-color { color: #ffcc00 !important; }
 .balance { grid-column: span 2; border: 1px solid #0026ff; background: rgba(0, 38, 255, 0.05); }
 .profit-card { grid-column: span 2; border: 1px solid #25D366; background: rgba(37, 211, 102, 0.05); }
 
@@ -44,9 +45,10 @@ input:disabled { background: #222; color: #666; cursor: not-allowed; border-colo
 
 .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; font-size: 0.9rem; margin-bottom: 10px; transition: 0.3s; }
 .btn-in { background: #25D366; } .btn-out { background: #ff3b3b; } .btn-adj { background: #0026ff; }
+.btn-uso-ext { background: #0026ff; color: #ffffff; } .btn-uso-ext:hover { background: #001fcc; }
 .btn-pay { background: #0026ff; } .btn-advance { background: #ff3b3b; }
-.btn-aguinaldo { background: #ff9900; }
-.btn-cap { background: #ff9900; } 
+.btn-aguinaldo { background: #ffcc00; color: #000000; }
+.btn-cap { background: #ffcc00; color: #000000; } 
 .btn-grey { background: #444444; color: #ffffff; }
 
 .btn-danger-clear { background: #331111; color: #ff3b3b; width: 100%; padding: 18px; border-radius: 10px; cursor: pointer; border: 1px solid #442222; font-weight: bold; font-size: 0.8rem; margin-top: 20px; text-transform: uppercase; transition: 0.3s; }
@@ -61,7 +63,7 @@ table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 th { padding: 10px; text-align: left; color: #888; border-bottom: 1px solid #333; white-space: nowrap; }
 td { padding: 10px; border-bottom: 1px solid #222; vertical-align: middle; }
 
-.row-cap-base { color: #ff9900 !important; font-weight: bold; background: rgba(255, 153, 0, 0.1); }
+.row-cap-base { color: #ffcc00 !important; font-weight: bold; background: rgba(255, 204, 0, 0.1); }
 
 .credit-color { color: #9b59b6 !important; }
 .row-credit-pending { color: #9b59b6 !important; background: rgba(155, 89, 182, 0.06); }
@@ -106,7 +108,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 7.8.5 (NUBE)</div>
+    <div class="version-tag">VERSIÓN 9.0 (NUBE)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -129,7 +131,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active help-trigger" id="btn-tab-contabilidad" onclick="showTab('contabilidad')" data-title="Módulo Contabilidad" data-help="Pantalla principal para controlar el flujo de caja, ver saldos de banco/efectivo y ganancias netas.">CONTABILIDAD</button>
+        <button class="tab-btn active help-trigger" id="btn-tab-contabilidad" onclick="showTab('contabilidad')" data-title="Módulo Planilla" data-help="Pantalla principal para controlar el flujo de caja, ver saldos de banco/efectivo y ganancias netas.">CONTABILIDAD</button>
         <button class="tab-btn help-trigger" id="btn-tab-planilla" onclick="showTab('planilla')" data-title="Módulo Planilla" data-help="Sección para administrar a tus trabajadores, anotar turnos de entrada/salida y calcular pagos.">PLANILLA</button>
     </div>
 
@@ -137,12 +139,11 @@ input:checked + .slider:before { transform: translateX(20px); }
         <div class="dashboard">
             <div class="card profit-card help-trigger" data-title="Ganancia Neta" data-help="Diferencia entre Ingresos y Egresos registrados en este periodo actual.">
                 <div style="position: absolute; left: 10px; top: 10px; display: flex; gap: 5px;">
-                    <button class="btn-icon help-trigger" style="color:#3498db; margin:0;" onclick="openHistoryLoader()" data-title="Calendario+" data-help="Carga Histórica: Registra movimientos con fechas pasadas sin alterar el flujo de caja actual si así lo deseas."><i class="fas fa-calendar-plus"></i></button>
-                    <button class="btn-icon help-trigger" style="color:#ff3b3b; margin:0;" onclick="resetPeriodProfit()" data-title="Botón Reiniciar" data-help="Limpia el contador de ganancias netas para empezar un nuevo periodo (semana o mes). No borra saldos de banco."><i class="fas fa-undo"></i></button>
+                    <button class="btn-icon help-trigger" style="color:#ff3b3b; margin:0;" onclick="resetPeriodProfit()" data-title="Reiniciar Ganancia" data-help="Limpia el contador de ganancias netas para empezar un nuevo periodo (semana o mes). No borra saldos de banco."><i class="fas fa-undo"></i></button>
                 </div>
                 <div style="position: absolute; right: 10px; top: 10px;">
                     <button class="btn-icon help-trigger" style="color:#25D366; margin:0;" onclick="toggleCierreSearch()" data-title="Lupita de Búsqueda" data-help="Busca y calcula la ganancia total entre dos fechas específicas. También permite filtrar por palabra clave (ej. Gasolina)."><i class="fas fa-search"></i></button>
-                    <button class="btn-icon help-trigger" style="color:#ff9900; margin:0;" onclick="openCierreHistory()" data-title="Botón Historial" data-help="Ver todos los cierres y reportes que has guardado anteriormente en el sistema."><i class="fas fa-history"></i></button>
+                    <button class="btn-icon help-trigger" style="color:#ffcc00; margin:0;" onclick="openCierreHistory()" data-title="Botón Historial" data-help="Ver todos los cierres y reportes que has guardado anteriormente en el sistema."><i class="fas fa-history"></i></button>
                 </div>
                 <h3>Ganancia Neta</h3><p id="net-profit">₡0</p>
             </div>
@@ -160,10 +161,10 @@ input:checked + .slider:before { transform: translateX(20px); }
                 </div>
                 <div style="display:block;">
                     <span style="font-size:0.6rem; color:#888; font-weight:bold; margin-left:5px;">PALABRA CLAVE (OPCIONAL)</span>
-                    <input type="text" id="c-keyword" placeholder="Ej: Gasolina, Pollo..." style="margin-bottom:10px;">
+                    <input type="text" id="c-keyword" placeholder="Filtro por detalle" style="margin-bottom:10px;">
                     
                     <div class="toggle-box" style="margin-bottom:12px; background:#000;">
-                        <span>INCLUIR USO EXTERNO</span>
+                        <span>INCLUIR GASTOS PERSONALES (USO EXT.)</span>
                         <label class="switch">
                             <input type="checkbox" id="include-adj-report">
                             <span class="slider"></span>
@@ -180,11 +181,23 @@ input:checked + .slider:before { transform: translateX(20px); }
         </div>
 
         <div class="form-box">
+            <div class="toggle-box" style="margin-bottom:12px; background:#000; border: 1px solid #0026ff;">
+                <span id="lbl-main-switch" style="color: #3498db; font-weight: bold;">AFECTAR CUADROS DE FLUJO</span>
+                <label class="switch">
+                    <input type="checkbox" id="main-switch" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
             <input type="text" id="amount" placeholder="Monto (₡)" oninput="formatCurrencyInput(this)" inputmode="decimal">
             <input type="text" id="desc" placeholder="Detalle...">
+            
+            <label class="input-label" style="margin-top: 5px; color:#aaa;">Fecha y Hora del Registro</label>
+            <input type="datetime-local" id="main-date-input" step="1" style="margin-bottom: 15px; font-weight: bold; background: #0b0b0b; border-color: #333;">
+
             <button class="btn btn-in help-trigger" onclick="openMethodModal('IN')" data-title="Registro Ingreso" data-help="Suma dinero a tus cuentas y lo cuenta como ganancia neta.">REGISTRAR INGRESO</button>
             <button class="btn btn-out help-trigger" onclick="openMethodModal('OUT')" data-title="Registro Egreso" data-help="Resta dinero de tus cuentas y se descuenta de la ganancia neta.">REGISTRAR EGRESO</button>
-            <button class="btn btn-adj help-trigger" onclick="openAdjModal()" data-title="Uso Externo / Inyección" data-help="Mueve el saldo de banco o efectivo sin afectar la ganancia neta. Ideal para gastos personales, imprevistos o inyecciones fuera del negocio.">USO EXTERNO / INYECCIÓN</button>
+            <button class="btn btn-uso-ext help-trigger" onclick="openUsoExternoModal()" data-title="Uso Externo" data-help="Registra retiros de dinero para tus gastos personales fuera del negocio. Afecta los saldos de caja/banco en color azul pero NO ensucia la ganancia neta laboral.">REGISTRAR USO EXTERNO</button>
+            <button class="btn btn-cap help-trigger" onclick="openAjustesModal()" data-title="Fijar Saldo / Crédito" data-help="Módulo para fijar saldos reales sincronizados de caja o guardar cuentas por cobrar de créditos pendientes.">FIJAR SALDO REAL / CRÉDITO</button>
         </div>
 
         <div class="search-container-flex">
@@ -207,7 +220,7 @@ input:checked + .slider:before { transform: translateX(20px); }
         <div class="form-box">
             <input type="text" id="staff-name" placeholder="Nombre">
             <input type="text" id="staff-rate" placeholder="Precio hora (₡)" oninput="formatCurrencyInput(this)" inputmode="decimal">
-            <button class="btn btn-adj help-trigger" onclick="addStaff()" data-title="Agregar Personal" data-help="Crea la ficha de un nuevo trabajador asignándole su salario por hora.">AGREGAR EMPLEADO</button>
+            <button class="btn btn-pay help-trigger" onclick="addStaff()" data-title="Agregar Personal" data-help="Crea la ficha de un nuevo trabajador asignándole su salario por hora.">AGREGAR EMPLEADO</button>
         </div>
         <div id="staff-list"></div>
     </div>
@@ -226,14 +239,14 @@ input:checked + .slider:before { transform: translateX(20px); }
             <button class="btn btn-in" onclick="saveBusinessIdentity()">GUARDAR CAMBIOS</button>
         </div>
         <div class="form-box">
-            <h4 style="margin-top:0; color:#ff9900;">Seguridad y Herramientas</h4>
+            <h4 style="margin-top:0; color:#ffcc00;">Seguridad y Herramientas</h4>
             <label class="input-label">PIN Actual</label>
             <input type="password" id="current-pin-input" placeholder="Ingrese PIN actual" maxlength="4" inputmode="numeric">
             <label class="input-label">Nuevo PIN</label>
             <input type="password" id="new-pin-input" placeholder="Ingrese nuevo PIN" maxlength="4" inputmode="numeric">
-            <button class="btn btn-adj" onclick="changePin()">CAMBIAR PIN</button>
+            <button class="btn btn-pay" onclick="changePin()">CAMBIAR PIN</button>
             
-            <button class="btn btn-adj help-trigger" style="margin-top: 15px; background: #222; border: 1px solid #444;" onclick="openTrashModal()" data-title="Papelera de Reciclaje" data-help="Revisa los movimientos eliminados de la contabilidad. Puedes restaurarlos o borrarlos permanentemente."><i class="fas fa-trash-alt" style="margin-right:8px; color:#ff9900;"></i> VER PAPELERA DE RECOLECCIÓN</button>
+            <button class="btn btn-cap help-trigger" style="margin-top: 15px; background: #222; border: 1px solid #444; color: #000000;" onclick="openTrashModal()" data-title="Papelera de Reciclaje" data-help="Revisa los movimientos eliminados de la contabilidad. Puedes restaurarlos o borrarlos permanentemente."><i class="fas fa-trash-alt" style="margin-right:8px; color:#ffcc00;"></i> VER PAPELERA DE RECOLECCIÓN</button>
             
             <h4 style="margin-top:25px; color:#25D366;">Respaldos de Datos (Seguridad)</h4>
             <button class="btn btn-in" onclick="exportDataBackup()"><i class="fas fa-download" style="margin-right:8px;"></i> CREAR COPIA DE SEGURIDAD</button>
@@ -253,11 +266,11 @@ input:checked + .slider:before { transform: translateX(20px); }
                     <span id="cloud-status" class="status-badge status-disconnected">Desconectado</span>
                 </div>
                 <p id="user-logged-email" style="font-size: 0.8rem; color: #25D366; display: none; margin-bottom: 10px; font-weight: bold;"></p>
-                <button id="btn-connect-google" class="btn btn-adj" style="background: #4285F4; color: white; margin: 0;" onclick="handleAuthClick()"><i class="fas fa-link" style="margin-right: 8px;"></i> Conectar con Google</button>
+                <button id="btn-connect-google" class="btn btn-cap" style="background: #4285F4; color: white; margin: 0;" onclick="handleAuthClick()"><i class="fas fa-link" style="margin-right: 8px;"></i> Conectar con Google</button>
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 7.8.5 (NUBE)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.0 (NUBE)</div>
 </div>
 
 <div id="help-card">
@@ -276,23 +289,13 @@ input:checked + .slider:before { transform: translateX(20px); }
     </div>
 </div>
 
-<div id="method-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeMethodModal('method-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Método de Pago</h3><button class="btn btn-adj" onclick="executeEntry('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-adj" onclick="executeEntry('TARJETA')">💳 TARJETA</button><button class="btn btn-adj" onclick="executeEntry('SIMPE')">📲 SIMPE</button><button class="btn btn-adj" onclick="executeEntry('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
+<div id="method-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeMethodModal('method-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Método de Pago</h3><button class="btn btn-pay" onclick="executeEntry('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="executeEntry('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="executeEntry('SIMPE')">📲 SIMPE</button><button class="btn btn-pay" onclick="executeEntry('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
 
-<div id="credit-release-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('credit-release-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Liberar Crédito: ¿Cómo pagaron?</h3><button class="btn btn-adj" onclick="releaseCreditToCashflow('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-adj" onclick="releaseCreditToCashflow('TARJETA')">💳 TARJETA</button><button class="btn btn-adj" onclick="releaseCreditToCashflow('SIMPE')">📲 SIMPE</button><button class="btn btn-adj" onclick="releaseCreditToCashflow('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
+<div id="credit-release-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('credit-release-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Liberar Crédito: ¿Cómo pagaron?</h3><button class="btn btn-pay" onclick="releaseCreditToCashflow('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('SIMPE')">📲 SIMPE</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
 
-<div id="adj-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeAdjModal()">×</span><h3 style="color:white;">Uso Externo / Inyección</h3>
-<button class="btn btn-in" onclick="executeEntry('EFECTIVO', 'ADJ_IN')">+ Inyección a Efectivo</button>
-<button class="btn btn-in" onclick="executeEntry('BANCO', 'ADJ_IN')">+ Inyección a Banco</button>
-<hr style="border:1px solid #333;">
-<button class="btn btn-out" onclick="executeEntry('EFECTIVO', 'ADJ_OUT')">- Uso Externo de Efectivo</button>
-<button class="btn btn-out" onclick="executeEntry('BANCO', 'ADJ_OUT')">- Uso Externo de Banco</button>
-<hr style="border:1px solid #333;">
-<p style="color:#ff9900; font-size:0.65rem; margin-bottom:12px; font-weight:bold; line-height:1.2;">⚠️ SINCRONIZAR SALDO: Fuerza el monto en el cuadro ignorando errores del pasado.</p>
-<button class="btn btn-cap" onclick="executeEntry('EFECTIVO', 'CAP_BASE')">FIJAR SALDO REAL: EFECTIVO</button>
-<button class="btn btn-cap" onclick="executeEntry('BANCO', 'CAP_BASE')">FIJAR SALDO REAL: BANCO</button>
-<hr style="border:1px solid #333;">
-<button class="btn btn-grey" onclick="executeEntry('CRÉDITO', 'CREDIT_PENDING')">📝 REGISTRAR CRÉDITO PENDIENTE</button>
-</div></div>
+<div id="uso-externo-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('uso-externo-modal')">×</span><h3 style="color:white; margin-bottom:10px;">Gasto Personal / Uso Externo</h3><p style="color:#aaa; font-size:0.75rem; margin-top:0; margin-bottom:20px; line-height:1.3;">Selecciona de dónde retirarás este dinero. No afectará las ganancias contables del negocio.</p><button class="btn btn-out" onclick="executeEntry('EFECTIVO', 'ADJ_OUT')">💵 RETIRAR DE EFECTIVO</button><button class="btn btn-out" onclick="executeEntry('BANCO', 'ADJ_OUT')">🏦 RETIRAR DE BANCO</button></div></div>
+
+<div id="ajustes-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('ajustes-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Ajustes y Gestión de Créditos</h3><p style="color:#ffcc00; font-size:0.65rem; margin-bottom:12px; font-weight:bold; line-height:1.2;">⚠️ SINCRONIZAR SALDO: Fuerza el monto en el cuadro para igualar tu dinero real físico o bancario ignorando errores del pasado.</p><button class="btn btn-cap" onclick="executeEntry('EFECTIVO', 'CAP_BASE')">FIJAR SALDO REAL: EFECTIVO</button><button class="btn btn-cap" onclick="executeEntry('BANCO', 'CAP_BASE')">FIJAR SALDO REAL: BANCO</button><hr style="border:1px solid #333; margin:15px 0;"><button class="btn btn-grey" onclick="executeEntry('CRÉDITO', 'CREDIT_PENDING')">📝 REGISTRAR CRÉDITO PENDIENTE</button></div></div>
 
 <div id="history-modal" class="modal" style="z-index: 9999;"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('history-modal')">×</span><h3 id="modal-title" style="color:white; margin-bottom:15px;"></h3><div id="modal-content"></div></div></div>
 <div id="custom-dialog" class="modal"><div class="modal-content-wrapper" id="custom-dialog-wrapper" style="text-align:center;"><h3 id="dialog-title">Aviso</h3><div id="dialog-msg" style="color:#ccc; margin-bottom: 20px;"></div><div id="dialog-buttons" style="display:flex; gap:10px; margin-top:20px;"></div></div></div>
@@ -328,10 +331,24 @@ let selectedCreditId = null;
 window.pendingAction = null; 
 let pendingType = 'IN'; 
 
+// CONTROL INTERRUPTOR DEL RELOJ GLOBAL
+let userInterruptedClock = false;
+
 window.onload = function() { 
     applyBusinessIdentity(); 
     if(bizData.name) document.getElementById('biz-name-input').value = bizData.name; 
     if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner; 
+    
+    // Iniciar reloj en vivo continuo (1 segundo de intervalo)
+    setMainDateToNow(); 
+    setInterval(setMainDateToNow, 1000);
+    
+    // Si el usuario toca manualmente la fecha, pausamos el segundero automático
+    const mainDateInp = document.getElementById('main-date-input');
+    if(mainDateInp) {
+        mainDateInp.addEventListener('input', () => { userInterruptedClock = true; });
+    }
+
     updateUI(); 
     renderStaff(); 
     initManual();
@@ -382,6 +399,13 @@ function initManual() {
     document.addEventListener('mouseup', handleCancel);
     document.addEventListener('mouseleave', handleCancel);
     document.addEventListener('touchend', handleCancel);
+}
+
+// LOGOUT MANUAL RECONSTRUIDO
+function logout() {
+    document.getElementById('admin-panel').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('pin').value = "";
 }
 
 function applyBusinessIdentity() {
@@ -460,9 +484,10 @@ function getFormatedDate(d) {
     let year = date.getFullYear();
     let hours = date.getHours();
     let minutes = date.getMinutes().toString().padStart(2, '0');
+    let seconds = date.getSeconds().toString().padStart(2, '0');
     let ampm = hours >= 12 ? 'pm' : 'am';
     hours = hours % 12 || 12;
-    return `${dayName} ${day}/${month}/${year} ${hours}:${minutes}${ampm}`; 
+    return `${dayName} ${day}/${month}/${year} ${hours}:${minutes}:${seconds}${ampm}`; 
 }
 
 function formatDateSlash(isoString) {
@@ -473,6 +498,7 @@ function formatDateSlash(isoString) {
     return `${day}/${month}/${d.getFullYear()}`;
 }
 
+// --- MOTOR DE CÁLCULO Y LOGÍSTICA VISUAL INVERTIDA VERSIÓN 9.0 ---
 function getFormatedTime(h) { const totalMin = Math.round(h * 60); return `${Math.floor(totalMin/60)}h ${totalMin%60}m`; }
 
 function formatVisual(num, decimals = 0) { 
@@ -486,10 +512,28 @@ function formatVisual(num, decimals = 0) {
 
 function cleanAmount(val) { return parseFloat(val.toString().replace(/\./g, "").replace(/,/g, ".")) || 0; }
 
+// ENRUTADOR DE SEGUNDOS EN RELOJ EN VIVO
+function setMainDateToNow() {
+    if (userInterruptedClock) return; 
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    const localISO = new Date(now.getTime() - offset).toISOString().slice(0, 19); 
+    const dateInput = document.getElementById('main-date-input');
+    if (dateInput) dateInput.value = localISO;
+}
+
 function updateUI() {
     const body = document.getElementById('history-body'); body.innerHTML = "";
     let tin = 0, tout = 0, mBank = 0, mCash = 0;
-    movements.sort((x, y) => new Date(x.date) - new Date(y.date));
+    
+    // 1. EL MOTOR MATEMÁTICO: Ordenamiento cronológico puro para consolidación exacta de saldos
+    movements.sort((x, y) => {
+        let diff = new Date(x.date) - new Date(y.date);
+        if (diff === 0) return x.id - y.id; 
+        return diff;
+    });
+    // Sincronizar permanentemente
+    localStorage.setItem('copo_data', JSON.stringify(movements));
 
     let lastCapEfectivo = null, lastCapBanco = null;
     movements.forEach(m => {
@@ -499,56 +543,80 @@ function updateUI() {
     mCash = lastCapEfectivo ? lastCapEfectivo.amount : 0;
     mBank = lastCapBanco ? lastCapBanco.amount : 0;
 
+    // Capturar cortes basados en el ID único (Momento real de creación)
+    let cutOffEfectivoId = lastCapEfectivo ? lastCapEfectivo.id : 0;
+    let cutOffBancoId = lastCapBanco ? lastCapBanco.id : 0;
+
     let resetTimestamp = new Date(lastResetDate).getTime();
 
     movements.forEach(m => {
-        if (m.type === 'CREDIT_PENDING' || m.method === 'USO EXTERNO') return;
+        if (m.type === 'CREDIT_PENDING') return;
 
-        // REPARADO QUIRÚRGICAMENTE: Si es histórico, solo suma en el cuadro si tiene activo el switch Y fue inyectado en este periodo activo (id > resetTimestamp)
+        let affect = (m.affectProfit !== undefined) ? m.affectProfit : true;
+        let isAdjustment = (m.type === 'ADJ_IN' || m.type === 'ADJ_OUT');
+
         let affectsProfit = false;
-        if (!m.historical) {
-            affectsProfit = (m.date > lastResetDate);
-        } else {
-            affectsProfit = (m.affectProfit && m.id > resetTimestamp);
+        // CIRUGÍA 9.0 PROFUNDA: Si el switch principal está APAGADO (affect === false), NO afecta la ganancia bajo ninguna circunstancia.
+        if (!isAdjustment && affect) {
+            if (!m.historical) {
+                affectsProfit = (m.date > lastResetDate);
+            } else {
+                affectsProfit = (m.id > resetTimestamp);
+            }
         }
 
         if (affectsProfit) { 
-            if (m.type === 'IN') tin += m.amount; else if(m.type === 'OUT') tout += m.amount; 
+            if (m.type === 'IN') tin += m.amount; 
+            else if(m.type === 'OUT') tout += m.amount; 
         }
-        let isAfterCap = false;
-        if(m.method === 'EFECTIVO' && lastCapEfectivo && m.date > lastCapEfectivo.date) isAfterCap = true;
-        if(m.method !== 'EFECTIVO' && lastCapBanco && m.date > lastCapBanco.date) isAfterCap = true;
         
-        if((!lastCapEfectivo && m.method === 'EFECTIVO') || (!lastCapBanco && m.method !== 'EFECTIVO') || isAfterCap) {
-            if(m.type !== 'CAP_BASE') {
+        if(m.type !== 'CAP_BASE') {
+            if (affect) {
+                let isEfectivo = (m.method === 'EFECTIVO' || m.method === '💵 EFECTIVO');
                 let effect = (m.type === 'IN' || m.type === 'ADJ_IN') ? m.amount : -m.amount;
-                // El banco y efectivo nunca se verán afectados si es histórico (independientemente del switch)
-                if (!m.historical) { if (m.method === 'EFECTIVO') mCash += effect; else mBank += effect; }
+                
+                // LÓGICA POR ID: Aquí el switch de flujo sigue mandando para proteger el dinero real contado
+                if (isEfectivo) {
+                    if (m.id > cutOffEfectivoId) mCash += effect;
+                } else {
+                    if (m.id > cutOffBancoId) mBank += effect;
+                }
             }
         }
     });
 
     let visibleCounter = 0;
-    const displayMovements = [...movements].reverse();
+    
+    // 2. EL MOTOR VISUAL PERFECCIONADO: Ordenamiento uniforme (Más nuevo arriba)
+    let displayMovements = [...movements];
+    displayMovements.sort((x, y) => {
+        let diff = new Date(y.date) - new Date(x.date);
+        if (diff === 0) return y.id - x.id;
+        return diff;
+    });
+
     displayMovements.forEach(m => {
         visibleCounter++;
         let isCap = m.type === 'CAP_BASE';
         let isCredit = m.type === 'CREDIT_PENDING';
+        let isUsoExterno = m.type === 'ADJ_OUT';
+        let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
         
         let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') ? m.amount : -m.amount;
         
-        let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')));
+        // CIRUGÍA 9.0 VISUAL: Filtro prioritario de color para Aguinaldo en amarillo
+        let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : (isUsoExterno ? 'adj-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')))));
         const imgBtn = m.img ? `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">` : `<button class="btn-add-img" onclick="triggerFileSelect(${m.id})"><i class="fas fa-plus-circle"></i></button>`;
         
         let creditActionHtml = isCredit ? `<button class="btn-icon" style="color:#25D366" onclick="openCreditReleaseModal(${m.id})"><i class="fas fa-handshake"></i></button>` : '';
 
-        // Detalle dinámico inteligente para saber si el histórico afecta el periodo activo o si ya pertenece a un periodo archivado
-        let isActivelyAffecting = m.historical && m.affectProfit && m.id > resetTimestamp;
-        let historialTag = m.historical ? ` (HISTÓRICO${m.affectProfit ? (isActivelyAffecting ? ' - AFECTA CUADRO' : ' - PERIODO ANTERIOR') : ''})` : '';
+        let isActivelyAffecting = m.affectProfit;
+        let historialTag = m.historical ? ` (HISTÓRICO${isActivelyAffecting ? ' - AFECTA FLUJO' : ' - SILENCIOSO'})` : (isActivelyAffecting ? '' : ' [S/AFECTAR CUADROS]');
+        let usoExternoTag = isUsoExterno ? ' [USO EXTERNO]' : '';
 
         body.innerHTML += `<tr class="${isCap ? 'row-cap-base' : (isCredit ? 'row-credit-pending' : '')}">
             <td style="white-space:nowrap">${getFormatedDate(m.date)}</td>
-            <td>${m.desc}<br><small>${m.method}${isCap ? ' [SALDO FIJADO]' : (isCredit ? ' [CRÉDITO PENDIENTE]' : '')}${historialTag}</small></td>
+            <td>${m.desc}<br><small>${m.method}${isCap ? ' [SALDO FIJADO]' : (isCredit ? ' [CRÉDITO PENDIENTE]' : '')}${usoExternoTag}${historialTag}</small></td>
             <td style="text-align:center">${imgBtn}</td>
             <td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${formatVisual(effect)}</td>
             <td style="text-align:right; white-space:nowrap;">
@@ -570,6 +638,7 @@ function updateUI() {
 function openCreditReleaseModal(id) {
     selectedCreditId = id;
     document.getElementById('credit-release-modal').style.display = 'flex';
+    updateBodyScroll();
 }
 
 function releaseCreditToCashflow(methodSelected) {
@@ -605,7 +674,7 @@ function processTableFile(input) {
         reader.onload = (e) => {
             let dataUrl = e.target.result;
             if (targetStaffIdx !== null) {
-                const sIdx = targetStaffIdx;
+                const sIdx = targetUploadContext.staffIdx;
                 const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === targetMoveId);
                 if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = dataUrl; saveStaff(); closeModal('history-modal'); openStaffHistory(sIdx); }
             } else {
@@ -620,7 +689,7 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "7.8.5", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData
+        version: "9.0", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
@@ -636,8 +705,8 @@ function importDataBackup(input) {
     reader.onload = function(e) {
         try {
             const importedPackage = JSON.parse(e.target.result);
-            if (!importedPackage.copo_data || !importedPackage.copo_pin_hash || !importedPackage.copo_staff) { return showMsg("Error: El archivo seleccionado no es un respaldo válido de Gestión Total."); }
-            showConfirm("¿Está seguro de restaurar esta copia de seguridad? Esto reemplazará los datos actuales por completo.", () => {
+            if (!importedPackage.copo_data || !importedPackage.copo_pin_hash || !importedPackage.copo_staff) { return showMsg("Error: Archivo inválido."); }
+            showConfirm("¿Está seguro de restaurar esta copia de seguridad?", () => {
                 localStorage.setItem('copo_pin_hash', importedPackage.copo_pin_hash);
                 localStorage.setItem('copo_data', JSON.stringify(importedPackage.copo_data));
                 localStorage.setItem('copo_staff', JSON.stringify(importedPackage.copo_staff));
@@ -654,7 +723,7 @@ function importDataBackup(input) {
                 if(bizData.name) document.getElementById('biz-name-input').value = bizData.name;
                 if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner;
                 
-                applyBusinessIdentity(); updateUI(); renderStaff(); showMsg("¡Restauración Completa!");
+                applyBusinessIdentity(); userInterruptedClock = false; setMainDateToNow(); updateUI(); renderStaff(); showMsg("¡Restauración Completa!");
             });
         } catch (err) { showMsg("Error crítico al procesar el archivo."); }
         input.value = "";
@@ -673,10 +742,14 @@ function filtrarMovimientos() {
     document.getElementById('mov-counter-val').innerText = countRows;
 }
 
-// MÓDULO PLANILLA - TOTALMENTE RECONECTADO Y OPERATIVO
+// MÓDULO PLANILLA
 function saveStaff() { localStorage.setItem('copo_staff', JSON.stringify(staff)); }
-function toggleStaff(i) { const bars = document.querySelectorAll('.staff-bar'); if(bars[i]) bars[i].classList.toggle('active'); }
-function toggleFeature(i, prop) { if(staff[i]) { staff[i][prop] = !staff[i][prop]; saveStaff(); } }
+function toggleStaff(i) { 
+    staff[i].isOpen = !staff[i].isOpen;
+    saveStaff();
+    renderStaff(); 
+}
+function toggleFeature(i, prop) { if(staff[i]) { staff[i][prop] = !staff[i][prop]; saveStaff(); renderStaff(); } }
 function fixStaffEntryTime(i) { const now = new Date(), offset = now.getTimezoneOffset() * 60000, localISO = new Date(now.getTime() - offset).toISOString().slice(0, 16); if(staff[i]) { staff[i].activeIn = localISO; saveStaff(); renderStaff(); showMsg(`Hora de entrada fijada para ${staff[i].name}.`); } }
 function clearStaffEntryTime(i) { if(staff[i]) { staff[i].activeIn = ""; saveStaff(); renderStaff(); } }
 
@@ -692,19 +765,83 @@ function renderStaff() {
                 else if(sh.type === 'PAYMENT_SUELDO') sueldoTotal += sh.earned;
             });
         }
+
+        // CÁLCULO EN TIEMPO REAL DE HORAS PENDIENTES DE LIQUIDACIÓN
+        let currentOrd = 0, currentExt = 0;
+        let latestPaymentId = 0;
+        if(s.shifts) {
+            s.shifts.forEach(sh => {
+                if(sh.type === 'PAYMENT_SUELDO' && sh.id > latestPaymentId) {
+                    latestPaymentId = sh.id;
+                }
+            });
+            s.shifts.forEach(sh => {
+                if(sh.type === 'SHIFT' && sh.id > latestPaymentId) {
+                    currentOrd += (sh.ord || 0);
+                    currentExt += (sh.ext || 0);
+                }
+            });
+        }
+
         const savedInTime = s.activeIn || "";
-        list.innerHTML += `<div class="staff-bar"><div class="staff-header-bar" onclick="toggleStaff(${i})"><b>${s.name}</b><div style="text-align:right"><span style="font-size:0.85rem">Sueldo: ₡${formatVisual(sueldoTotal)}</span>${aguinaldoTotal > 0 ? `<br><span style="font-size:0.75rem; color:#ff9900">Agui: ₡${formatVisual(aguinaldoTotal)}</span>` : ''}</div></div><div class="staff-content"><p style="font-size:0.8rem; color:#888;">Tarifa: ₡${formatVisual(s.rate)}/h</p><div class="toggle-box"><span>Pago Horas Extras (x1.5)</span><label class="switch"><input type="checkbox" ${s.useExtras ? 'checked' : ''} onchange="toggleFeature(${i}, 'useExtras')"><span class="slider"></span></label></div><div style="display:flex; justify-content:space-between; margin-bottom:15px;"><button class="btn-icon" style="color:#ff9900" onclick="openAguinaldoCalc(${i})"><i class="fas fa-piggy-bank"></i></button><button class="btn-icon" style="color:#3498db" onclick="openStaffHistory(${i})"><i class="fas fa-history"></i></button><button class="btn-icon" style="color:#25D366" onclick="checkPeriodStaff(${i})"><i class="fas fa-search"></i></button><button class="btn-icon" style="color:#0026ff" onclick="updateStaffRate(${i})"><i class="fas fa-tag"></i></button><button class="btn-icon" style="color:#ff3b3b" onclick="deleteStaff(${i})"><i class="fas fa-trash"></i></button></div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <label class="input-label" style="margin:0;">Hora Entrada</label>
-            <div>
-                <button onclick="fixStaffEntryTime(${i})" style="background: #113311; color: #25D366; border: 1px solid #225522; border-radius: 4px; font-size: 0.65rem; padding: 2px 6px; cursor: pointer; font-weight: bold;"><i class="fas fa-bolt"></i> FIJAR AHORA</button>
-                ${savedInTime ? `<button onclick="clearStaffEntryTime(${i})" style="background: transparent; color: #ff3b3b; border: none; font-size: 0.65rem; cursor: pointer; margin-left: 5px;"><i class="fas fa-times"></i></button>` : ''}
+        const isActive = s.isOpen ? 'active' : '';
+        
+        list.innerHTML += `
+        <div class="staff-bar ${isActive}">
+            <div class="staff-header-bar" onclick="toggleStaff(${i})">
+                <b>${s.name}</b>
+                <i class="fas fa-chevron-down" style="color:#555;"></i>
             </div>
-        </div>
-        <input type="datetime-local" id="dt-in-${i}" value="${savedInTime}" onchange="staff[${i}].activeIn=this.value; saveStaff();" style="margin-bottom:10px;"><label class="input-label">Hora Salida</label><input type="datetime-local" id="dt-out-${i}"><button class="btn btn-in" style="margin-top:10px;" onclick="addHours(${i})">ANOTAR TURNO</button><div style="background:#000; padding:15px; border-radius:10px; margin-top:10px;"><input type="text" id="adv-desc-${i}" placeholder="Detalle de adelanto..." style="margin-bottom:8px;"><input type="text" id="adv-amt-${i}" placeholder="₡ Monto Adelanto" oninput="formatCurrencyInput(this)" inputmode="decimal"><button class="btn btn-advance" onclick="giveAdvance(${i})">REGISTRAR ADELANTO</button></div><button class="btn btn-pay" style="margin-top:10px;" onclick="resetDebt(${i})">PAGAR SUELDO</button>${aguinaldoTotal > 0 ? `<button class="btn btn-aguinaldo" onclick="payAguinaldoOnly(${i})">PAGAR AGUINALDO</button>` : ''}</div></div>`;
+            <div class="staff-content">
+                
+                <div style="background:#0b0b0b; padding:12px; border-radius:8px; margin-bottom:12px; border:1px solid #222;">
+                    <p style="margin:0 0 6px 0; font-size:0.85rem; color:#aaa;">Tarifa: <b style="color:white;">₡${formatVisual(s.rate)}/h</b></p>
+                    <p style="margin:0 0 6px 0; font-size:0.85rem; color:#aaa;">Sueldo: <b class="profit">₡${formatVisual(sueldoTotal)}</b></p>
+                    <p style="margin:0 0 6px 0; font-size:0.85rem; color:#aaa;">Aguinaldo: <b style="color:#ffcc00;">₡${formatVisual(aguinaldoTotal)}</b></p>
+                    <hr style="border:0; border-top:1px solid #222; margin:8px 0;">
+                    <p style="margin:0 0 6px 0; font-size:0.85rem; color:#aaa;">Horas Ord. Actuales: <b class="bank-color">${currentOrd.toFixed(1)} h</b></p>
+                    <p style="margin:0; font-size:0.85rem; color:#aaa;">Horas Ext. Actuales: <b style="color:#ffcc00;">${currentExt.toFixed(1)} h</b></p>
+                </div>
+
+                <div class="toggle-box">
+                    <span>Pago Horas Extras (x1.5)</span>
+                    <label class="switch"><input type="checkbox" ${s.useExtras ? 'checked' : ''} onchange="toggleFeature(${i}, 'useExtras')"><span class="slider"></span></label>
+                </div>
+                
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <button class="btn-icon" style="color:#ffcc00" onclick="openAguinaldoCalc(${i})"><i class="fas fa-piggy-bank"></i></button>
+                    <button class="btn-icon" style="color:#3498db" onclick="openStaffHistory(${i})"><i class="fas fa-history"></i></button>
+                    <button class="btn-icon" style="color:#25D366" onclick="checkPeriodStaff(${i})"><i class="fas fa-search"></i></button>
+                    <button class="btn-icon" style="color:#0026ff" onclick="updateStaffRate(${i})"><i class="fas fa-tag"></i></button>
+                    <button class="btn-icon" style="color:#ff3b3b" onclick="deleteStaff(${i})"><i class="fas fa-trash"></i></button>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label class="input-label" style="margin:0;">Hora Entrada</label>
+                    <div>
+                        <button onclick="fixStaffEntryTime(${i})" style="background: #113311; color: #25D366; border: 1px solid #225522; border-radius: 4px; font-size: 0.65rem; padding: 2px 6px; cursor: pointer; font-weight: bold;"><i class="fas fa-bolt"></i> FIJAR AHORA</button>
+                        ${savedInTime ? `<button onclick="clearStaffEntryTime(${i})" style="background: transparent; color: #ff3b3b; border: none; font-size: 0.65rem; cursor: pointer; margin-left: 5px;"><i class="fas fa-times"></i></button>` : ''}
+                    </div>
+                </div>
+                <input type="datetime-local" id="dt-in-${i}" value="${savedInTime}" onchange="staff[${i}].activeIn=this.value; saveStaff();" style="margin-bottom:10px;">
+                <label class="input-label">Hora Salida</label>
+                <input type="datetime-local" id="dt-out-${i}">
+                <button class="btn btn-in" style="margin-top:10px;" onclick="addHours(${i})">ANOTAR TURNO</button>
+                
+                <div style="background:#000; padding:15px; border-radius:10px; margin-top:10px;">
+                    <input type="text" id="adv-desc-${i}" placeholder="Detalle de adelanto..." style="margin-bottom:8px;">
+                    <input type="text" id="adv-amt-${i}" placeholder="₡ Monto Adelanto" oninput="formatCurrencyInput(this)" inputmode="decimal">
+                    <button class="btn btn-advance" onclick="giveAdvance(${i})">REGISTRAR ADELANTO</button>
+                </div>
+                
+                <button class="btn btn-pay" style="margin-top:10px;" onclick="resetDebt(${i})">PAGAR SUELDO</button>
+                ${aguinaldoTotal > 0 ? `<button class="btn btn-aguinaldo" onclick="payAguinaldoOnly(${i})">PAGAR AGUINALDO</button>` : ''}
+            </div>
+        </div>`;
     });
 }
 
+// HISTORIAL DE EMPLEADOS AJUSTADO CON EL NUEVO COLOR DE AGUINALDO
 function openStaffHistory(i) {
     let h = `<div class="history-wrapper"><table><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:center">Fact.</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>`;
     if(staff[i].shifts) {
@@ -712,9 +849,9 @@ function openStaffHistory(i) {
             let det = "", colorClass = sh.earned >= 0 ? 'profit' : 'expense', actionBtnHtml = `<button class="btn-ver-cierre" onclick="viewStaffShiftInvoice(${i}, ${sh.id})">VER</button>`;
             if(sh.type === 'SHIFT') det = `${getFormatedTime(sh.ord)} ord ${sh.ext > 0 ? '+ ' + getFormatedTime(sh.ext) + ' ext' : ''}`;
             else if(sh.type === 'ADVANCE') det = `<i class="fas fa-handholding-usd"></i> ${sh.desc || "Adelanto"}`;
-            else if(sh.type === 'AGUINALDO') det = `<i class="fas fa-piggy-bank"></i> ${sh.desc}`; 
+            else if(sh.type === 'AGUINALDO') { det = `<i class="fas fa-piggy-bank"></i> ${sh.desc}`; colorClass = 'aguinaldo-color'; }
             else if(sh.type === 'PAYMENT_SUELDO') { det = `<i class="fas fa-check"></i> ${sh.desc}`; colorClass = 'adj-color'; }
-            else if(sh.type === 'PAYMENT_AGUINALDO') { det = `<i class="fas fa-gift"></i> Pago Aguinaldo`; colorClass = 'adj-color'; }
+            else if(sh.type === 'PAYMENT_AGUINALDO') { det = `<i class="fas fa-gift"></i> Pago Aguinaldo`; colorClass = 'aguinaldo-color'; }
             const imgBtn = sh.img ? `<img src="${sh.img}" class="img-preview-mini" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})">` : `<button class="btn-add-img" onclick="triggerFileSelect(${sh.id}, ${i})"><i class="fas fa-plus-circle"></i></button>`;
             h += `<tr><td>${getFormatedDate(sh.date)}</td><td>${det}</td><td style="text-align:center">${imgBtn}</td><td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${formatVisual(sh.earned)}</td><td style="text-align:right; white-space:nowrap;">${actionBtnHtml}<button class="btn-icon" style="color:#ff3b3b" onclick="deleteStaffMovement(${i}, ${sh.id})"><i class="fas fa-trash"></i></button></td></tr>`;
         });
@@ -726,10 +863,12 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
     const s = staff[staffIdx], sh = s.shifts.find(x => x.id === shiftId); if (!sh) return showMsg("Registro no encontrado.");
     let tituloHtml = "Desglose de Registro", htmlContent = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4;"><p><b>Empleado:</b> ${s.name}</p><p><b>Fecha de Registro:</b> ${getFormatedDate(sh.date)}</p><hr style="border:1px solid #222; margin:10px 0;">`;
     if (sh.metaDesglose) {
-        const meta = sh.metaDesglose; htmlContent += `<p><b>Rango Evaluado:</b><br><small style="color:#ff9900;">Desde: ${formatDateSlash(meta.desde)}<br>Hasta: ${formatDateSlash(meta.hasta)}</small></p><hr style="border:1px solid #222; margin:10px 0;">`;
+        const meta = sh.metaDesglose; htmlContent += `<p><b>Rango Evaluado:</b><br><small style="color:#ffcc00;">Desde: ${formatDateSlash(meta.desde)}<br>Hasta: ${formatDateSlash(meta.hasta)}</small></p><hr style="border:1px solid #222; margin:10px 0;">`;
         if (sh.type.includes("AGUINALDO")) { 
-            tituloHtml = "Recibo: Aguinaldo Registrado"; 
-            htmlContent += `<p><b>Horas Ord:</b> ${meta.horasOrd.toFixed(1)} h</p><p><b>Horas Ext:</b> ${meta.horasExt.toFixed(1)} h</p><p style="color:#25D366;"><b>Acumulado Bruto:</b> ₡${formatVisual(meta.totalSueldoPuro)}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="profit" style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #25D366; padding:8px; border-radius:6px;">Monto Aguinaldo (8.33%): ₡${formatVisual(Math.abs(sh.earned))}</h3>`; 
+            tituloHtml = sh.type === 'PAYMENT_AGUINALDO' ? "Recibo: Aguinaldo Pagado" : "Recibo: Aguinaldo Registrado"; 
+            const hOrd = meta.horasOrd !== undefined ? meta.horasOrd : (meta.textHorasOrd !== undefined ? meta.textHorasOrd : 0);
+            const hExt = meta.horasExt !== undefined ? meta.horasExt : (meta.textHorasExt !== undefined ? meta.textHorasExt : 0);
+            htmlContent += `<p><b>Horas Ord:</b> ${hOrd.toFixed(1)} h</p><p><b>Horas Ext:</b> ${hExt.toFixed(1)} h</p><p style="color:#25D366;"><b>Acumulado Bruto:</b> ₡${formatVisual(meta.totalSueldoPuro)}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="aguinaldo-color" style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #ffcc00; padding:8px; border-radius:6px; color:#000000; background:#ffcc00; font-weight:bold;">${sh.type === 'PAYMENT_AGUINALDO' ? 'Monto Pagado' : 'Monto Aguinaldo'} (${meta.porcentaje || 8.33}%): ₡${formatVisual(Math.abs(sh.earned))}</h3>`; 
         } 
         else { tituloHtml = "Recibo: Sueldo Liquidado"; htmlContent += `<p><b>Horas Ord:</b> ${meta.horasOrd.toFixed(1)} h = <span>₡${formatVisual(meta.horasOrd * meta.tarifaBase)}</span></p><p><b>Horas Ext:</b> ${meta.horasExt.toFixed(1)} h = <span>₡${formatVisual(meta.horasExt * meta.tarifaBase * 1.5)}</span></p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="adj-color" style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #0026ff; padding:8px; border-radius:6px;">Total Liquidado: ₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
     } else {
@@ -737,7 +876,7 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
         else if (sh.type === 'ADVANCE') { tituloHtml = "Adelanto Otorgado"; htmlContent += `<p><b>Detalle:</b> ${sh.desc || "Adelanto Directo"}</p><hr style="border:1px dashed #333;"><h3 class="expense" style="text-align:center;">₡${formatVisual(Math.abs(sh.earned))}</h3>`; } 
         else { tituloHtml = "Liquidación Histórica"; htmlContent += `<p>${sh.desc || "Histórico"}</p><hr style="border:1px dashed #333;"><h3 class="adj-color" style="text-align:center;">₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
     }
-    htmlContent += `</div><button class="btn btn-adj" style="margin-top:15px; width:100%;" onclick="closeModal('history-modal'); openStaffHistory(${staffIdx});">VOLVER</button>`; openModal(tituloHtml, htmlContent);
+    htmlContent += `</div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal'); openStaffHistory(${staffIdx});">VOLVER</button>`; openModal(tituloHtml, htmlContent);
 }
 
 function deleteStaffMovement(staffIndex, moveId) { showConfirm("¿Eliminar este registro?", () => { const move = staff[staffIndex].shifts.find(sh => sh.id === moveId); if (move) { staff[staffIndex].debt -= move.earned; staff[staffIndex].shifts = staff[staffIndex].shifts.filter(sh => sh.id !== moveId); saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(staffIndex); } }); }
@@ -745,17 +884,80 @@ function addHours(i) { const s = staff[i], inV = document.getElementById(`dt-in-
 
 function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) staff[i].shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById(`adv-desc-${i}`).value = ""; }
 function resetDebt(i) { if(!staff[i].shifts) return showMsg("No hay sueldo pendiente."); let tOrd = 0, tExt = 0, sueldoPuro = 0, fechas = []; staff[i].shifts.forEach(sh => { if(sh.type === 'SHIFT' || sh.type === 'ADVANCE' || sh.type === 'PAYMENT_SUELDO') sueldoPuro += sh.earned; if(sh.type === 'SHIFT') { tOrd += sh.ord; tExt += sh.ext; fechas.push(new Date(sh.date).getTime()); } }); if(sueldoPuro <= 0) return showMsg("No hay sueldo pendiente."); fechas.sort((a,b) => a - b); let fDesde = fechas.length > 0 ? new Date(fechas[0]).toISOString() : new Date().toISOString(), fHasta = fechas.length > 0 ? new Date(fechas[fechas.length - 1]).toISOString() : new Date().toISOString(), detail = `Sueldo: ${getFormatedTime(tOrd)} ord` + (tExt > 0 ? ` + ${getFormatedTime(tExt)} ext` : ''); showConfirm(`¿Liquidar sueldo de ₡${formatVisual(sueldoPuro)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -sueldoPuro, type: 'PAYMENT_SUELDO', desc: detail, img: "", metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } }); staff[i].debt -= sueldoPuro; saveStaff(); renderStaff(); }); }
-function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose), metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0 }; showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); }); }
-function openAguinaldoCalc(i) { openModal("Aguinaldo", `<div style="text-align:center;"><p>Cálculo 8.33%</p><input type="date" id="ag-from"><input type="date" id="ag-to"><button class="btn btn-adj" onclick="calcAguinaldo833(${i})">CALCULAR</button><div id="ag-res"></div></div>`); }
-function calcAguinaldo833(i) { const fV = document.getElementById('ag-from').value, tV = document.getElementById('ag-to').value; if(!fV || !tV) return showMsg("Fechas incompletas"); const f = new Date(fV + "T00:00:00").getTime(), t = new Date(tV + "T23:59:59").getTime(); let totalS = 0, tOrd = 0, tExt = 0; if(staff[i].shifts) { staff[i].shifts.forEach(sh => { const sD = new Date(sh.date).getTime(); if(sD >= f && sD <= t && sh.earned > 0 && sh.type === 'SHIFT') { totalS += sh.earned; tOrd += sh.ord; tExt += sh.ext; } }); } const monto = totalS * 0.0833; document.getElementById('ag-res').innerHTML = `<h2 class="profit">₡${formatVisual(monto)}</h2><button class="btn btn-in" onclick="addAguinaldoToStaff(${i}, ${monto}, '${fV}', '${tV}', ${tOrd}, ${tExt}, ${totalS})">AGREGAR A PLANILLA</button>`; }
-function addAguinaldoToStaff(i, monto, f, t, tOrd, tExt, totalS) { if(monto <= 0) return showMsg("Monto en 0"); staff[i].debt += monto; const desc = `Aguinaldo del ${formatDateSlash(f)} al ${formatDateSlash(t)}`; if(!staff[i].shifts) staff[i].shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: monto, type: 'AGUINALDO', desc: desc, img: "" , metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: new Date(f + "T00:00:00").toISOString(), hasta: new Date(t + "T23:59:59").toISOString(), totalSueldoPuro: totalS } }); saveStaff(); renderStaff(); closeModal('history-modal'); }
+function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose); let metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : null; if(metaCopia) { if(metaCopia.textHorasOrd !== undefined && metaCopia.horasOrd === undefined) metaCopia.horasOrd = metaCopia.textHorasOrd; if(metaCopia.textHorasExt !== undefined && metaCopia.horasExt === undefined) metaCopia.horasExt = metaCopia.textHorasExt; } else { metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: 8.33 }; } showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); }); }
+
+function openAguinaldoCalc(i) { 
+    openModal("Aguinaldo", `
+        <div style="text-align:center;">
+            <label class="input-label" style="text-align:center; color:white;">DESDE</label>
+            <input type="date" id="ag-from">
+            <label class="input-label" style="text-align:center; color:white;">HASTA</label>
+            <input type="date" id="ag-to">
+            <label class="input-label" style="text-align:center; color:white;">% A CALCULAR</label>
+            <input type="number" id="ag-percent" value="8.33" step="0.01" style="text-align:center; font-weight:bold; font-size: 1.2rem;">
+            <button class="btn btn-pay" style="color:white;" onclick="calcAguinaldo833(${i})">CALCULAR</button>
+            <div id="ag-res"></div>
+        </div>`); 
+}
+
+function calcAguinaldo833(i) { 
+    const fV = document.getElementById('ag-from').value, 
+          tV = document.getElementById('ag-to').value,
+          percent = parseFloat(document.getElementById('ag-percent').value) || 0; 
+    
+    if(!fV || !tV) return showMsg("Fechas incompletas"); 
+    const f = new Date(fV + "T00:00:00").getTime(), 
+          t = new Date(tV + "T23:59:59").getTime(); 
+    
+    let totalS = 0, tOrd = 0, tExt = 0; 
+    if(staff[i].shifts) { 
+        staff[i].shifts.forEach(sh => { 
+            const sD = new Date(sh.date).getTime(); 
+            if(sD >= f && sD <= t && sh.earned > 0 && sh.type === 'SHIFT') { 
+                totalS += sh.earned; 
+                tOrd += sh.ord; 
+                tExt += sh.ext; 
+            } 
+        }); 
+    } 
+    const monto = totalS * (percent / 100); 
+    document.getElementById('ag-res').innerHTML = `
+        <h2 class="profit">₡${formatVisual(monto)}</h2>
+        <button class="btn btn-in" onclick="addAguinaldoToStaff(${i}, ${monto}, '${fV}', '${tV}', ${tOrd}, ${tExt}, ${totalS}, ${percent})">AGREGAR A PLANILLA</button>`; 
+}
+
+function addAguinaldoToStaff(i, monto, f, t, tOrd, tExt, totalS, percent) { 
+    if(monto <= 0) return showMsg("Monto en 0"); 
+    staff[i].debt += monto; 
+    const desc = `Aguinaldo (${percent}%) del ${formatDateSlash(f)} al ${formatDateSlash(t)}`; 
+    if(!staff[i].shifts) staff[i].shifts = []; 
+    staff[i].shifts.unshift({ 
+        id: Date.now(), 
+        date: new Date().toISOString(), 
+        earned: monto, 
+        type: 'AGUINALDO', 
+        desc: desc, 
+        img: "" , 
+        metaDesglose: { 
+            horasOrd: tOrd, 
+            horasExt: tExt, 
+            tarifaBase: staff[i].rate, 
+            desde: new Date(f + "T00:00:00").toISOString(), 
+            hasta: new Date(t + "T23:59:59").toISOString(), 
+            totalSueldoPuro: totalS,
+            porcentaje: percent 
+        } 
+    }); 
+    saveStaff(); 
+    renderStaff(); 
+    closeModal('history-modal'); 
+}
 
 function updateStaffRate(i) { openModal("Ajustar Tarifa", `<div style="text-align:center;"><p>Nueva tarifa por hora para <b>${staff[i].name}</b></p><input type="text" id="new-rate-val" placeholder="₡ Tarifa" oninput="formatCurrencyInput(this)" inputmode="decimal"><button class="btn btn-in" onclick="saveNewRate(${i})">GUARDAR TARIFA</button></div>`); }
 function saveNewRate(i) { const val = cleanAmount(document.getElementById('new-rate-val').value); if(val > 0) { staff[i].rate = val; saveStaff(); renderStaff(); closeModal('history-modal'); showMsg("Tarifa actualizada."); } }
-function addStaff() { const n = document.getElementById('staff-name').value, r = cleanAmount(document.getElementById('staff-rate').value); if(!n || !r) return; staff.unshift({ name: n, rate: r, debt: 0, shifts: [], useExtras: true, activeIn: "" }); saveStaff(); renderStaff(); document.getElementById('staff-name').value = ""; document.getElementById('staff-rate').value = ""; }
+function addStaff() { const n = document.getElementById('staff-name').value, r = cleanAmount(document.getElementById('staff-rate').value); if(!n || !r) return; staff.unshift({ name: n, rate: r, debt: 0, shifts: [], useExtras: true, activeIn: "", isOpen: true }); saveStaff(); renderStaff(); document.getElementById('staff-name').value = ""; document.getElementById('staff-rate').value = ""; }
 function deleteStaff(i) { showConfirm(`¿Deseas eliminar permanentemente a <b>${staff[i].name}</b> de la planilla?`, () => { staff.splice(i, 1); saveStaff(); renderStaff(); }); }
 
-// LÓGICA DE LA LUPA DE PLANILLA
 function checkPeriodStaff(i) {
     openModal(`Consultar Periodo: ${staff[i].name}`, `<div class="form-box" style="background:transparent; border:none; padding:0;">
         <label class="input-label">Desde</label>
@@ -793,12 +995,11 @@ function executeStaffPeriodQuery(i) {
         <p class="expense"><b>Adelantos en Rango:</b> ₡${formatVisual(adelantos)}</p>
         <hr style="border:1px dashed #333; margin:10px 0;">
         <h3 class="profit" style="text-align:center; font-size:1.1rem; margin:0;">Monto Neto Sugerido: ₡${formatVisual(totalDevengado - adelantos)}</h3>
-    </div><button class="btn btn-adj" style="margin-top:15px; width:100%;" onclick="closeModal('history-modal')">CERRAR</button>`;
+    </div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal')">CERRAR</button>`;
     
     openModal(`Informe: ${staff[i].name}`, resHtml);
 }
 
-// LÓGICA DE BORRADO TOTAL DEL SISTEMA CON INPUTS ELEGANTES (ROJO)
 function confirmFullReset() {
     showConfirmCustomDanger("⚠️ <b>¡ALERTA CRÍTICA DE BORRADO!</b><br><br>Esta acción eliminará de forma irreversible toda la base de datos de Gestión Total (Contabilidad, Flujos de Caja, Planillas e Historiales).<br><br>¿Realmente deseas continuar?");
 }
@@ -817,6 +1018,7 @@ function showConfirmCustomDanger(msg) {
         <button class="btn btn-out" style="flex:1; margin:0;" onclick="openSecurePinPrompt()">SÍ, CONTINUAR</button>
     `; 
     document.getElementById('custom-dialog').style.display = 'flex'; 
+    updateBodyScroll();
 }
 
 function openSecurePinPrompt() {
@@ -860,7 +1062,7 @@ function processSecureSystemClear() {
         const dialogWrapper = document.getElementById('custom-dialog-wrapper');
         dialogWrapper.style.borderColor = "#ff3b3b";
         document.getElementById('dialog-title').innerText = "ERROR DE PIN";
-        document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operation estructural fue bloqueada por seguridad.";
+        document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operation fue denegada.";
         document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-out" style="width:100%; margin:0;" onclick="closeDialogResetStyles()">ENTENDIDO</button>`;
     }
 }
@@ -873,11 +1075,16 @@ function closeDialogResetStyles() {
     closeDialog();
 }
 
-// MANIPULACIÓN DE MODALES Y COMPONENTES GLOBALES
-function openModal(t, c) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('history-modal').style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function updateBodyScroll() {
+    const anyOpen = Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'flex');
+    if(anyOpen) document.body.classList.add('modal-open');
+    else document.body.classList.remove('modal-open');
+}
 
-function zoomImage(s, id = null, staffIdx = null) { currentZoomedId = id; currentZoomedStaffIdx = staffIdx; document.getElementById('imgZoom').src = s; document.getElementById('imgModal').style.display = 'flex'; }
+function openModal(t, c) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('history-modal').style.display = 'flex'; updateBodyScroll(); }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; updateBodyScroll(); }
+
+function zoomImage(s, id = null, staffIdx = null) { currentZoomedId = id; currentZoomedStaffIdx = staffIdx; document.getElementById('imgZoom').src = s; document.getElementById('imgModal').style.display = 'flex'; updateBodyScroll(); }
 
 function deleteCurrentZoomedImage() {
     if (!currentZoomedId) return;
@@ -893,12 +1100,13 @@ function deleteCurrentZoomedImage() {
     });
 }
 
-function showMsg(msg) { document.getElementById('dialog-title').innerText = "Aviso"; document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-adj" onclick="closeDialog()">OK</button>`; document.getElementById('custom-dialog').style.display = 'flex'; }
+// ALERTA Y CONFIRMACIONES COMUNES
+function showMsg(msg) { document.getElementById('dialog-title').innerText = "Aviso"; document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-pay" style="color:white;" onclick="closeDialog()">OK</button>`; document.getElementById('custom-dialog').style.display = 'flex'; updateBodyScroll(); }
 
 function showConfirm(msg, onConfirm) { 
     document.getElementById('dialog-title').innerText = "Confirmar"; document.getElementById('dialog-msg').innerHTML = msg; 
-    document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-adj" style="flex:1" onclick="closeDialog()">NO</button><button class="btn btn-in" style="flex:1" onclick="executeConfirmAction()">SÍ</button>`; 
-    window.pendingAction = onConfirm; document.getElementById('custom-dialog').style.display = 'flex'; 
+    document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-pay" style="flex:1; color:white;" onclick="closeDialog()">NO</button><button class="btn btn-in" style="flex:1" onclick="executeConfirmAction()">SÍ</button>`; 
+    window.pendingAction = onConfirm; document.getElementById('custom-dialog').style.display = 'flex'; updateBodyScroll(); 
 }
 function executeConfirmAction() { 
     if (typeof window.pendingAction === 'function') { 
@@ -906,14 +1114,15 @@ function executeConfirmAction() {
     } 
     closeDialog(); 
 }
-function closeDialog() { document.getElementById('custom-dialog').style.display = 'none'; }
+function closeDialog() { document.getElementById('custom-dialog').style.display = 'none'; updateBodyScroll(); }
 
 function openTrashModal() {
     if (trashMovements.length === 0) return showMsg("La papelera de reciclaje está completamente vacía.");
     let html = `<div class="history-wrapper" style="max-height: 350px;"><table><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>`;
     trashMovements.forEach(m => {
         let isCap = m.type === 'CAP_BASE'; let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE') ? m.amount : -m.amount;
-        let colorClass = isCap ? 'cash-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit'));
+        let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
+        let colorClass = isCap ? 'cash-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')));
         html += `<tr><td>${formatDateSlash(m.date.split('T')[0])}</td><td>${m.desc}<br><small>${m.method}</small></td><td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${formatVisual(effect)}</td><td style="text-align:right; white-space:nowrap;"><button class="btn-icon" style="color:#25D366; margin-right:5px;" onclick="restoreMovement(${m.id})"><i class="fas fa-undo-alt"></i></button><button class="btn-icon" style="color:#ff3b3b" onclick="permanentlyDeleteMovement(${m.id})"><i class="fas fa-times-circle"></i></button></td></tr>`;
     });
     openModal("Papelera de Reciclaje", html + "</tbody></table></div>");
@@ -943,41 +1152,39 @@ function deleteMovement(id) {
     }); 
 }
 
+// EDICIÓN EN LA CAJA DE MOVIMIENTO
 function editMovement(id) {
     const m = movements.find(x => x.id === id); if(!m) return;
-    const d = new Date(m.date); const localISO = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const d = new Date(m.date); const localISO = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19);
     const isMuro = m.type === 'CAP_BASE';
     let html = `<div class="form-box" style="background:transparent; border:none; padding:0;"><label class="input-label">Monto</label><input type="text" id="edit-amt" value="${formatVisual(m.amount)}" oninput="formatCurrencyInput(this)" inputmode="decimal"><label class="input-label">Detalle</label><input type="text" id="edit-dsc" value="${m.desc}">`;
 
     if (isMuro) { html += `<input type="hidden" id="edit-date" value="${localISO}"><input type="hidden" id="temp-method" value="${m.method}"><input type="hidden" id="temp-dir" value="IN"><input type="hidden" id="is-adj-orig" value="true"><input type="hidden" id="orig-type" value="CAP_BASE">`; } 
     else {
-        html += `<label class="input-label">Fecha y Hora</label><input type="datetime-local" id="edit-date" value="${localISO}"><label class="input-label">Método</label><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
-                <button class="btn ${m.method === 'EFECTIVO' ? 'btn-in' : 'btn-adj'}" onclick="document.getElementById('temp-method').value='EFECTIVO'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem;">💵 EFECTIVO</button>
-                <button class="btn ${m.method === 'TARJETA' ? 'btn-in' : 'btn-adj'}" onclick="document.getElementById('temp-method').value='TARJETA'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem;">💳 TARJETA</button>
-                <button class="btn ${m.method === 'SIMPE' ? 'btn-in' : 'btn-adj'}" onclick="document.getElementById('temp-method').value='SIMPE'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem;">📲 SIMPE</button>
-                <button class="btn ${m.method === 'TRANSFERENCIA' ? 'btn-in' : 'btn-adj'}" onclick="document.getElementById('temp-method').value='TRANSFERENCIA'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem;">🏦 TRANSF.</button>
-                <button class="btn ${m.method === 'USO EXTERNO' ? 'btn-in' : 'btn-adj'}" onclick="document.getElementById('temp-method').value='USO EXTERNO'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; grid-column: span 2;">💼 USO EXTERNO</button>
+        html += `<label class="input-label">Fecha y Hora</label><input type="datetime-local" id="edit-date" step="1" value="${localISO}"><label class="input-label">Método / Cuenta</label><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+                <button class="btn ${m.method === 'EFECTIVO' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='EFECTIVO'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">💵 EFECTIVO</button>
+                <button class="btn ${m.method === 'TARJETA' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='TARJETA'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">💳 TARJETA</button>
+                <button class="btn ${m.method === 'SIMPE' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='SIMPE'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">📲 SIMPE</button>
+                <button class="btn ${m.method === 'TRANSFERENCIA' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='TRANSFERENCIA'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">🏦 TRANSF.</button>
             </div><input type="hidden" id="temp-method" value="${m.method}"><label class="input-label">Tipo de Movimiento</label><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
-                <button class="btn ${m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CREDIT_PENDING' ? 'btn-in' : 'btn-adj'}" onclick="document.getElementById('temp-dir').value='IN'; updateEditTypeUI(this)" style="padding:10px; font-size:0.7rem;">📥 INGRESO / ENTRADA</button>
-                <button class="btn ${m.type === 'OUT' || m.type === 'ADJ_OUT' ? 'btn-out' : 'btn-adj'}" onclick="document.getElementById('temp-dir').value='OUT'; updateEditTypeUI(this)" style="padding:10px; font-size:0.7rem;">📤 EGRESO / SALIDA</button>
+                <button class="btn ${m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CREDIT_PENDING' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-dir').value='IN'; updateEditTypeUI(this)" style="padding:10px; font-size:0.7rem; color:white;">📥 INGRESO / ENTRADA</button>
+                <button class="btn ${m.type === 'OUT' || m.type === 'ADJ_OUT' ? 'btn-out' : 'btn-pay'}" onclick="document.getElementById('temp-dir').value='OUT'; updateEditTypeUI(this)" style="padding:10px; font-size:0.7rem; color:white;">📤 EGRESO / SALIDA</button>
             </div><input type="hidden" id="temp-dir" value="${m.type.includes('IN') || m.type === 'CREDIT_PENDING' ? 'IN' : 'OUT'}"><input type="hidden" id="is-adj-orig" value="${m.type.startsWith('ADJ_') ? 'true' : 'false'}"><input type="hidden" id="orig-type" value="${m.type}">`;
             
-        if (m.historical) {
-            html += `<div class="toggle-box" style="margin-bottom:12px; background:#000;">
-                <span>AFECTAR CUADRO DE GANANCIAS</span>
-                <label class="switch">
-                    <input type="checkbox" id="edit-affect-profit" ${m.affectProfit ? 'checked' : ''}>
-                    <span class="slider"></span>
-                </label>
-            </div>`;
-        }
+        html += `<div class="toggle-box" style="margin-bottom:12px; background:#000;">
+            <span>AFECTAR CUADROS ACTIVOS</span>
+            <label class="switch">
+                <input type="checkbox" id="edit-affect-profit" ${(m.affectProfit === undefined || m.affectProfit) ? 'checked' : ''}>
+                <span class="slider"></span>
+            </label>
+        </div>`;
         html += `<input type="hidden" id="is-historical" value="${m.historical ? 'true' : 'false'}">`;
     }
     openModal("Editar Registro", html + `<button class="btn btn-in" onclick="saveEditMovement(${id})">GUARDAR CAMBIOS</button></div>`);
 }
 
-function updateEditMethodUI(btn) { const container = btn.parentElement; container.querySelectorAll('button').forEach(b => { b.classList.remove('btn-in'); b.classList.add('btn-adj'); }); btn.classList.remove('btn-adj'); btn.classList.add('btn-in'); }
-function updateEditTypeUI(btn) { const container = btn.parentElement; container.querySelectorAll('button').forEach(b => { b.classList.remove('btn-in', 'btn-out'); b.classList.add('btn-adj'); }); if(btn.innerText.includes("INGRESO")) btn.classList.add('btn-in'); else btn.classList.add('btn-out'); }
+function updateEditMethodUI(btn) { const container = btn.parentElement; container.querySelectorAll('button').forEach(b => { b.classList.remove('btn-in'); b.classList.add('btn-pay'); }); btn.classList.remove('btn-pay'); btn.classList.add('btn-in'); }
+function updateEditTypeUI(btn) { const container = btn.parentElement; container.querySelectorAll('button').forEach(b => { b.classList.remove('btn-in', 'btn-out'); b.classList.add('btn-pay'); }); if(btn.innerText.includes("INGRESO")) btn.classList.add('btn-in'); else btn.classList.add('btn-out'); }
 
 function saveEditMovement(id) {
     const mIdx = movements.findIndex(x => x.id === id);
@@ -986,9 +1193,9 @@ function saveEditMovement(id) {
         const newMethod = document.getElementById('temp-method').value, newDir = document.getElementById('temp-dir').value;
         const isAdjOrig = document.getElementById('is-adj-orig').value === 'true', origType = document.getElementById('orig-type').value;
         
+        const wasAffectProfit = document.getElementById('edit-affect-profit') ? document.getElementById('edit-affect-profit').checked : true;
         const isHistInput = document.getElementById('is-historical');
         const wasHistorical = (isHistInput && isHistInput.value === 'true');
-        const wasAffectProfit = wasHistorical ? document.getElementById('edit-affect-profit').checked : (movements[mIdx].affectProfit || false);
 
         let newType = newDir;
         if (origType === 'CAP_BASE') { newType = 'CAP_BASE'; } 
@@ -999,7 +1206,6 @@ function saveEditMovement(id) {
         movements[mIdx].historical = wasHistorical;
         movements[mIdx].affectProfit = wasAffectProfit;
         
-        // REPARADO QUIRÚRGICAMENTE: Si el histórico se configuró para afectar ganancias, actualizamos su ID con la estampa de tiempo de HOY para reactivarlo en el periodo corriente
         if (wasHistorical && wasAffectProfit) { movements[mIdx].id = Date.now(); }
 
         if (origType !== 'CAP_BASE') { movements[mIdx].date = new Date(document.getElementById('edit-date').value).toISOString(); }
@@ -1023,7 +1229,10 @@ function verDetalleCierre(id) {
         <hr style="border:1px solid #222; margin:10px 0;">
         <p class="profit" style="font-weight:bold; font-size:1.05rem; margin:8px 0;">Ingresos: ₡${formatVisual(c.ingresos || 0)}</p>
         <p class="expense" style="font-weight:bold; font-size:1.05rem; margin:8px 0;">Egresos: ₡${formatVisual(c.egresos || 0)}</p>
-        <h3 class="adj-color" style="border:1px dashed #0026ff; padding:10px; border-radius:8px; text-align:center; margin-top:15px; font-size:1.2rem;">Balance: ₡${formatVisual(c.totalNeto, 2)}</h3>
+        <div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;">
+            <h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3>
+            <p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(c.totalNeto, 2)}</p>
+        </div>
     </div>`;
     openModal("Desglose del Reporte", htmlDesglose); 
 }
@@ -1049,24 +1258,34 @@ function searchInPeriod() {
         if(m.date >= fT && m.date <= tT && (kw === "" || m.desc.toLowerCase().includes(kw))) { 
             if (m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') return;
 
-            // REPARADO QUIRÚRGICAMENTE: Identificamos si el movimiento pertenece a uso externo o ajustes
-            let isUsoExterno = (m.method === 'USO EXTERNO' || m.type === 'ADJ_IN' || m.type === 'ADJ_OUT');
-            
-            // Si es un movimiento de uso externo y el switch está APAGADO, lo brincamos.
-            // Si el switch está ENCENDIDO, se lo salta este 'if' y se procesa transparente con todo lo demás.
-            if (isUsoExterno && !incAdj) return;
-
-            if (m.type === 'IN' || m.type === 'ADJ_IN') { 
+            if (m.type === 'IN') { 
                 i += m.amount; 
                 matches.push(m); 
-            } else if (m.type === 'OUT' || m.type === 'ADJ_OUT') { 
+            } else if (m.type === 'OUT') { 
                 e += m.amount; 
                 matches.push(m); 
+            } else if (m.type === 'ADJ_OUT') {
+                if (incAdj) {
+                    e += m.amount; 
+                    matches.push(m);
+                }
             }
         } 
     }); 
-    const ganancia = i - e;
+    
+    const balanceCalculado = i - e;
     const notaPeriodo = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` - Filtro: "${kw}"` : "");
+
+    let htmlDesglose = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;">
+        <p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Periodo:</b> <small>${notaPeriodo}</small></p>
+        <hr style="border:1px solid #222; margin:10px 0;">
+        <p class="profit" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Ingresos: ₡${formatVisual(i)}</p>
+        <p class="expense" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Egresos: ₡${formatVisual(e)}</p>
+        <div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;">
+            <h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3>
+            <p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(balanceCalculado)}</p>
+        </div>
+    </div>`;
 
     let tablaFacturas = `<div class="history-wrapper" style="margin-top:15px; max-height:220px;"><table style="width:100%;"><thead><tr><th>Detalle</th><th style="text-align:center;">Fact.</th><th style="text-align:right;">Monto</th></tr></thead><tbody>`;
     if(matches.length === 0) {
@@ -1074,23 +1293,17 @@ function searchInPeriod() {
     } else {
         [...matches].reverse().forEach(m => {
             let eff = (m.type === 'IN' || m.type === 'ADJ_IN') ? m.amount : -m.amount;
-            let cCls = (m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit');
+            let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
+            let cCls = isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : 'profit');
             let imgBtn = m.img ? `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">` : `<span style="color:#444; font-size:0.7rem;">S/F</span>`;
-            tablaFacturas += `<tr><td><small style="color:#888;">${formatDateSlash(m.date.split('T')[0])}</small><br>${m.desc}</td><td style="text-align:center;">${imgBtn}</td><td class="${cCls}" style="text-align:right; font-weight:bold;">₡${formatVisual(eff)}</td></tr>`;
+            tablaFacturas += `<tr><td><small style="color:#888;">${getFormatedDate(m.date)}</small><br>${m.desc}</td><td style="text-align:center;">${imgBtn}</td><td class="${cCls}" style="text-align:right; font-weight:bold;">₡${formatVisual(eff)}</td></tr>`;
         });
     }
     tablaFacturas += `</tbody></table></div>`;
 
-    openModal("Cierre de Periodo", `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;">
-        <p><b>Periodo:</b> <small>${notaPeriodo}</small></p>
-        <hr style="border:1px solid #222; margin:10px 0;">
-        <p class="profit" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Ingresos: ₡${formatVisual(i)}</p>
-        <p class="expense" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Egresos: ₡${formatVisual(e)}</p>
-        <h3 class="adj-color" style="border:1px dashed #0026ff; padding:10px; border-radius:8px; text-align:center; margin-top:15px;">Balance: ₡${formatVisual(ganancia)}</h3>
-    </div>
-    ${tablaFacturas}
-    <button class="btn btn-in" style="margin-top:15px; margin-bottom:5px;" onclick="injectPeriodToDashboardProfit(${ganancia}, '${f}', '${t}')">REFLEJAR GANANCIA</button>
-    <button class="btn btn-adj" style="background:#444;" onclick="saveHistoricalCierre('${f}', '${t}', ${ganancia}, ${i}, ${e}, '${kw}')">GUARDAR ESTE REPORTE</button>`); 
+    openModal("Cierre de Periodo", htmlDesglose + tablaFacturas + `
+    <button class="btn btn-in" style="margin-top:15px; margin-bottom:5px;" onclick="injectPeriodToDashboardProfit(${balanceCalculado}, '${f}', '${t}')">REFLEJAR GANANCIA EN PANEL</button>
+    <button class="btn btn-cap" style="background:#444; color:white;" onclick="saveHistoricalCierre('${f}', '${t}', ${balanceCalculado}, ${i}, ${e}, '${kw}')">GUARDAR ESTE REPORTE</button>`); 
 }
 
 function injectPeriodToDashboardProfit(amt, f, t) { 
@@ -1115,51 +1328,55 @@ function openMethodModal(t) {
     if(!document.getElementById('amount').value) return showMsg("Monto vacío"); 
     pendingType = t; 
     document.getElementById('method-modal').style.display = 'flex'; 
+    updateBodyScroll();
 }
-function closeMethodModal() { document.getElementById('method-modal').style.display = 'none'; }
-function openAdjModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('adj-modal').style.display = 'flex'; }
-function closeAdjModal() { document.getElementById('adj-modal').style.display = 'none'; }
+function closeMethodModal() { document.getElementById('method-modal').style.display = 'none'; updateBodyScroll(); }
+
+function openUsoExternoModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('uso-externo-modal').style.display = 'flex'; updateBodyScroll(); }
+function openAjustesModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('ajustes-modal').style.display = 'flex'; updateBodyScroll(); }
 
 function executeEntry(m, ot = null) { 
-    const t = ot || pendingType; const dsc = document.getElementById('desc').value || (t === 'CAP_BASE' ? 'Saldo Real Fijado' : 'S/D');
-    movements.unshift({ id: Date.now(), type: t, amount: cleanAmount(document.getElementById('amount').value), desc: dsc, method: m, date: new Date().toISOString(), img: "" }); 
-    localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeMethodModal(); closeAdjModal(); document.getElementById('amount').value = ""; document.getElementById('desc').value = ""; 
-}
-
-function openHistoryLoader() { 
-    openModal("Carga Histórica", `<div class="form-box" style="background:transparent; border:none; padding:0;">
-        <label class="input-label">Fecha del Registro</label>
-        <input type="date" id="old-date">
-        <label class="input-label">Monto (₡)</label>
-        <input type="text" id="old-amt" placeholder="Monto" oninput="formatCurrencyInput(this)" inputmode="decimal">
-        <label class="input-label">Detalle</label>
-        <input type="text" id="old-dsc" placeholder="Detalle">
-        <label class="input-label">Tipo</label>
-        <select id="old-type"><option value="OUT">Egreso</option><option value="IN">Ingreso</option></select>
-        <label class="input-label">Método de Pago</label>
-        <select id="old-method">
-            <option value="EFECTIVO">💵 EFECTIVO</option>
-            <option value="TARJETA">💳 TARJETA</option>
-            <option value="SIMPE">📲 SIMPE</option>
-            <option value="TRANSFERENCIA">🏦 TRANSF.</option>
-            <option value="USO EXTERNO">💼 USO EXTERNO</option>
-        </select>
-        <div class="toggle-box" style="margin-bottom:15px; background:#000;">
-            <span>AFECTAR CUADRO DE GANANCIAS</span>
-            <label class="switch">
-                <input type="checkbox" id="old-affect-profit">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <button class="btn btn-in" onclick="saveOldMove()">GUARDAR EN CUADRO</button>
-    </div>`); 
-}
-function saveOldMove() { 
-    const d = document.getElementById('old-date').value, a = cleanAmount(document.getElementById('old-amt').value), s = document.getElementById('old-dsc').value, t = document.getElementById('old-type').value, m = document.getElementById('old-method').value; if(!d || !a || !s) return showMsg("Faltan datos"); 
+    const t = ot || pendingType; 
+    let dsc = document.getElementById('desc').value;
     
-    const affectProfit = document.getElementById('old-affect-profit').checked;
+    if(t === 'ADJ_OUT') {
+        if(!dsc) dsc = 'Uso Externo Personal';
+        else if(!dsc.toLowerCase().includes('uso externo')) dsc = 'Uso Externo: ' + dsc;
+    } else {
+        if(!dsc) {
+            if(t === 'CAP_BASE') dsc = 'Saldo Real Fijado';
+            else dsc = 'S/D';
+        }
+    }
     
-    movements.unshift({ id: Date.now(), type: t, amount: a, desc: s, method: m, date: new Date(d + "T12:00:00").toISOString(), img: "", historical: true, affectProfit: affectProfit }); localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeModal('history-modal'); showMsg("Registro histórico añadido.");
+    const affect = document.getElementById('main-switch') ? document.getElementById('main-switch').checked : true;
+    const userChosenDate = document.getElementById('main-date-input').value;
+    const isoDateToSave = userChosenDate ? new Date(userChosenDate).toISOString() : new Date().toISOString();
+    const isHistoricalMove = isoDateToSave < lastResetDate;
+    
+    movements.unshift({ 
+        id: Date.now(), 
+        type: t, 
+        amount: cleanAmount(document.getElementById('amount').value), 
+        desc: dsc, 
+        method: m, 
+        date: isoDateToSave, 
+        img: "",
+        affectProfit: affect,
+        historical: isHistoricalMove
+    }); 
+    
+    localStorage.setItem('copo_data', JSON.stringify(movements)); 
+    updateUI(); 
+    closeMethodModal(); 
+    closeModal('uso-externo-modal');
+    closeModal('ajustes-modal');
+    
+    document.getElementById('amount').value = ""; 
+    document.getElementById('desc').value = ""; 
+    
+    userInterruptedClock = false; 
+    setMainDateToNow(); 
 }
 </script>
 </body>

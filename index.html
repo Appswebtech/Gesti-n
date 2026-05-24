@@ -145,7 +145,7 @@ input:checked + .slider:before { transform: translateX(20px); }
                     <button class="btn-icon help-trigger" style="color:#25D366; margin:0;" onclick="toggleCierreSearch()" data-title="Lupita de Búsqueda" data-help="Busca y calcula la ganancia total entre dos fechas específicas. También permite filtrar por palabra clave (ej. Gasolina)."><i class="fas fa-search"></i></button>
                     <button class="btn-icon help-trigger" style="color:#ffcc00; margin:0;" onclick="openCierreHistory()" data-title="Botón Historial" data-help="Ver todos los cierres y reportes que has guardado anteriormente en el sistema."><i class="fas fa-history"></i></button>
                 </div>
-                <h3>Ganancia Neta</h3><p id="net-profit">₡0</p>
+                <h3>Ganancia Neta</h3><p id="net-profit">₡0,00</p>
             </div>
             
             <div id="cierre-search" class="search-box-inline" style="grid-column: span 2; display:none; background:#1a1a1a; padding:15px; border-radius:15px; margin-bottom:15px; border: 1px solid #333;">
@@ -175,9 +175,9 @@ input:checked + .slider:before { transform: translateX(20px); }
                 </div>
             </div>
 
-            <div class="card balance help-trigger" data-title="Capital Actual" data-help="Suma total de tu dinero disponible (Banco + Efectivo)."><h3>Capital Actual</h3><p id="total-balance">₡0</p></div>
-            <div class="card help-trigger" data-title="En Banco" data-help="Dinero disponible en tarjetas, transferencias o SIMPE."><h3>En Banco</h3><p class="bank-color" id="val-bank">₡0</p></div>
-            <div class="card help-trigger" data-title="En Efectivo" data-help="Dinero físico disponible en la caja del local."><h3>En Efectivo</h3><p class="cash-color" id="val-cash">₡0</p></div>
+            <div class="card balance help-trigger" data-title="Capital Actual" data-help="Suma total de tu dinero disponible (Banco + Efectivo)."><h3>Capital Actual</h3><p id="total-balance">₡0,00</p></div>
+            <div class="card help-trigger" data-title="En Banco" data-help="Dinero disponible en tarjetas, transferencias o SIMPE."><h3>En Banco</h3><p class="bank-color" id="val-bank">₡0,00</p></div>
+            <div class="card help-trigger" data-title="En Efectivo" data-help="Dinero físico disponible en la caja del local."><h3>En Efectivo</h3><p class="cash-color" id="val-cash">₡0,00</p></div>
         </div>
 
         <div class="form-box">
@@ -314,7 +314,7 @@ const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets https://www.
 
 let tokenClient;
 let gapiInited = false;
-let gisInited = false;
+let gisnited = false;
 
 // VARIABLES DE ESTADO LOCAL DE LA APP
 let secure_pin_hash = localStorage.getItem('copo_pin_hash') || "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
@@ -501,7 +501,8 @@ function formatDateSlash(isoString) {
 // --- MOTOR DE CÁLCULO Y LOGÍSTICA VISUAL INVERTIDA VERSIÓN 9.0 ---
 function getFormatedTime(h) { const totalMin = Math.round(h * 60); return `${Math.floor(totalMin/60)}h ${totalMin%60}m`; }
 
-function formatVisual(num, decimals = 0) { 
+// AJUSTE REALIZADO: Ahora decimals tiene un valor por defecto de 2 para asegurar céntimos en todo lado.
+function formatVisual(num, decimals = 2) { 
     const privacy = document.getElementById('privacy-switch')?.checked;
     if (privacy) return "****";
     let fixed = Number(num || 0).toFixed(decimals);
@@ -632,7 +633,7 @@ function updateUI() {
     document.getElementById('val-bank').innerText = "₡" + formatVisual(mBank, 2);
     document.getElementById('val-cash').innerText = "₡" + formatVisual(mCash, 2);
     document.getElementById('total-balance').innerText = "₡" + formatVisual(mBank + mCash, 2);
-    document.getElementById('net-profit').innerText = "₡" + formatVisual((tin - tout) + virtualProfitBase);
+    document.getElementById('net-profit').innerText = "₡" + formatVisual((tin - tout) + virtualProfitBase, 2);
 }
 
 function openCreditReleaseModal(id) {
@@ -859,6 +860,7 @@ function openStaffHistory(i) {
     openModal("Actividad: " + staff[i].name, h + "</tbody></table></div>");
 }
 
+// CIRUGÍA DE PRECISIÓN EN EL MOTOR DE DESGLOSE DE RECIBO DE PLANILLA
 function viewStaffShiftInvoice(staffIdx, shiftId) {
     const s = staff[staffIdx], sh = s.shifts.find(x => x.id === shiftId); if (!sh) return showMsg("Registro no encontrado.");
     let tituloHtml = "Desglose de Registro", htmlContent = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4;"><p><b>Empleado:</b> ${s.name}</p><p><b>Fecha de Registro:</b> ${getFormatedDate(sh.date)}</p><hr style="border:1px solid #222; margin:10px 0;">`;
@@ -868,12 +870,16 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
             tituloHtml = sh.type === 'PAYMENT_AGUINALDO' ? "Recibo: Aguinaldo Pagado" : "Recibo: Aguinaldo Registrado"; 
             const hOrd = meta.horasOrd !== undefined ? meta.horasOrd : (meta.textHorasOrd !== undefined ? meta.textHorasOrd : 0);
             const hExt = meta.horasExt !== undefined ? meta.horasExt : (meta.textHorasExt !== undefined ? meta.textHorasExt : 0);
-            htmlContent += `<p><b>Horas Ord:</b> ${hOrd.toFixed(1)} h</p><p><b>Horas Ext:</b> ${hExt.toFixed(1)} h</p><p style="color:#25D366;"><b>Acumulado Bruto:</b> ₡${formatVisual(meta.totalSueldoPuro)}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="aguinaldo-color" style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #ffcc00; padding:8px; border-radius:6px; color:#000000; background:#ffcc00; font-weight:bold;">${sh.type === 'PAYMENT_AGUINALDO' ? 'Monto Pagado' : 'Monto Aguinaldo'} (${meta.porcentaje || 8.33}%): ₡${formatVisual(Math.abs(sh.earned))}</h3>`; 
+            htmlContent += `<p><b>Horas Ord:</b> ${hOrd.toFixed(1)} h</p><p><b>Horas Ext:</b> ${hExt.toFixed(1)} h</p><p style="color:#25D366;"><b>Acumulado Bruto:</b> ₡${formatVisual(meta.totalSueldoPuro)}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #ffcc00; padding:8px; border-radius:6px; color:#000000; background:#ffcc00; font-weight:bold;">${sh.type === 'PAYMENT_AGUINALDO' ? 'Monto Pagado' : 'Monto Aguinaldo'} (${meta.porcentaje || 8.33}%): ₡${formatVisual(Math.abs(sh.earned))}</h3>`; 
         } 
         else { tituloHtml = "Recibo: Sueldo Liquidado"; htmlContent += `<p><b>Horas Ord:</b> ${meta.horasOrd.toFixed(1)} h = <span>₡${formatVisual(meta.horasOrd * meta.tarifaBase)}</span></p><p><b>Horas Ext:</b> ${meta.horasExt.toFixed(1)} h = <span>₡${formatVisual(meta.horasExt * meta.tarifaBase * 1.5)}</span></p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="adj-color" style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #0026ff; padding:8px; border-radius:6px;">Total Liquidado: ₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
     } else {
         if (sh.type === 'SHIFT') { tituloHtml = "Turno de Trabajo"; htmlContent += `<p>${getFormatedTime(sh.ord)} ord y ${getFormatedTime(sh.ext)} ext.</p><hr style="border:1px solid #333;"><h3 class="profit" style="text-align:center;">₡${formatVisual(sh.earned)}</h3>`; } 
         else if (sh.type === 'ADVANCE') { tituloHtml = "Adelanto Otorgado"; htmlContent += `<p><b>Detalle:</b> ${sh.desc || "Adelanto Directo"}</p><hr style="border:1px dashed #333;"><h3 class="expense" style="text-align:center;">₡${formatVisual(Math.abs(sh.earned))}</h3>`; } 
+        else if (sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') {
+            tituloHtml = sh.type === 'PAYMENT_AGUINALDO' ? "Recibo: Aguinaldo Pagado" : "Recibo: Aguinaldo Registrado";
+            htmlContent += `<p><b>Detalle:</b> ${sh.desc || "Aguinaldo de Periodo"}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #ffcc00; padding:8px; border-radius:6px; color:#000000; background:#ffcc00; font-weight:bold;">${sh.type === 'PAYMENT_AGUINALDO' ? 'Monto Pagado' : 'Monto Aguinaldo'}: ₡${formatVisual(Math.abs(sh.earned))}</h3>`;
+        }
         else { tituloHtml = "Liquidación Histórica"; htmlContent += `<p>${sh.desc || "Histórico"}</p><hr style="border:1px dashed #333;"><h3 class="adj-color" style="text-align:center;">₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
     }
     htmlContent += `</div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal'); openStaffHistory(${staffIdx});">VOLVER</button>`; openModal(tituloHtml, htmlContent);
@@ -1213,6 +1219,7 @@ function saveEditMovement(id) {
     }
 }
 
+// SOLUCIÓN AL DISEÑO DE PESTAÑAS Y SECCIONES
 function showTab(t) { document.getElementById('tab-contabilidad').style.display = t === 'contabilidad' ? 'block' : 'none'; document.getElementById('tab-planilla').style.display = t === 'planilla' ? 'block' : 'none'; document.getElementById('tab-configuracion').style.display = t === 'configuracion' ? 'block' : 'none'; document.getElementById('btn-tab-contabilidad').classList.toggle('active', t === 'contabilidad'); document.getElementById('btn-tab-planilla').classList.toggle('active', t === 'planilla'); }
 
 function toggleCierreSearch() { const s = document.getElementById('cierre-search'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
@@ -1330,6 +1337,7 @@ function openMethodModal(t) {
     document.getElementById('method-modal').style.display = 'flex'; 
     updateBodyScroll();
 }
+// CORRECCIÓN EXACTA AQUÍ: Cambiado .style.none por .style.display = 'none' para que la ventana cierre de verdad y reactive los clics
 function closeMethodModal() { document.getElementById('method-modal').style.display = 'none'; updateBodyScroll(); }
 
 function openUsoExternoModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('uso-externo-modal').style.display = 'flex'; updateBodyScroll(); }

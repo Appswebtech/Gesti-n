@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 9.0 - Edición Nube</title>
+<title>Gestión Total 9.4 - Edición Nube</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -43,6 +43,17 @@ header { border-bottom: 2px solid #0026ff; padding-bottom: 10px; margin-bottom: 
 input, select { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #333; background: #0b0b0b; color: white; box-sizing: border-box; outline: none; }
 input:disabled { background: #222; color: #666; cursor: not-allowed; border-color: #444; }
 
+/* DISEÑO DE CIRUGÍA DE ETIQUETAS INTEGRADO */
+.tags-container { position: relative; width: 100%; margin-bottom: 12px; box-sizing: border-box; }
+.tags-container input { width: 100%; padding-right: 45px; margin-bottom: 0 !important; }
+.tags-btn-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; background: none; border: none; z-index: 10; padding: 5px; outline: none; }
+.tags-dropdown { position: absolute; top: 100%; left: 0; width: 100%; background: #141414; border: 1px solid #0026ff; border-radius: 8px; max-height: 190px; overflow-y: auto; z-index: 50000; display: none; box-shadow: 0 8px 25px rgba(0,0,0,0.8); margin-top: 5px; box-sizing: border-box; }
+.tags-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #222; font-size: 0.85rem; text-align: left; display: flex; align-items: center; justify-content: space-between; color: #ffffff; }
+.tags-item:last-child { border-bottom: none; }
+.tags-item:hover { background: #0026ff; color: white; }
+.tags-add-btn { color: #25D366; font-weight: bold; background: rgba(37, 211, 102, 0.05); border-top: 1px solid #333; }
+.tags-add-btn:hover { background: #25D366; color: black; }
+
 .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; font-size: 0.9rem; margin-bottom: 10px; transition: 0.3s; }
 .btn-in { background: #25D366; } .btn-out { background: #ff3b3b; } .btn-adj { background: #0026ff; }
 .btn-uso-ext { background: #0026ff; color: #ffffff; } .btn-uso-ext:hover { background: #001fcc; }
@@ -78,7 +89,7 @@ td { padding: 10px; border-bottom: 1px solid #222; vertical-align: middle; }
 .staff-bar.active .staff-content { display: block; }
 .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.1rem; margin-left: 8px; }
 
-.modal { display: none; position: fixed; z-index: 13000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); padding: 10px; box-sizing: border-box; align-items: center; justify-content: center; }
+.modal { display: none; position: fixed; z-index: 60000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); padding: 10px; box-sizing: border-box; align-items: center; justify-content: center; }
 .modal-content-wrapper { position: relative; background: #1a1a1a; width: 100%; max-width: 500px; padding: 20px; border-radius: 15px; border: 1px solid #333; margin: auto; max-height: 90vh; overflow-y: auto; }
 .close-x { position: absolute; top: 10px; right: 15px; color: #ff3b3b; font-size: 1.8rem; cursor: pointer; font-weight: bold; z-index: 100; }
 
@@ -92,7 +103,7 @@ input:checked + .slider { background-color: #0026ff; }
 input:checked + .slider:before { transform: translateX(20px); }
 .input-label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; text-align: left; }
 
-#help-card { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #1a1a1a; border: 2px solid #0026ff; border-radius: 15px; padding: 20px; z-index: 20000; box-shadow: 0 0 30px rgba(0,38,255,0.4); animation: slideUp 0.3s ease; }
+#help-card { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #1a1a1a; border: 2px solid #0026ff; border-radius: 15px; padding: 20px; z-index: 65000; box-shadow: 0 0 30px rgba(0,38,255,0.4); animation: slideUp 0.3s ease; }
 @keyframes slideUp { from { bottom: -100px; opacity: 0; } to { bottom: 20px; opacity: 1; } }
 
 .version-tag { text-align: center; font-size: 0.7rem; color: #444; font-weight: bold; margin-bottom: 15px; }
@@ -108,7 +119,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 9.0 (NUBE)</div>
+    <div class="version-tag">VERSIÓN 9.4 (NUBE)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -189,7 +200,12 @@ input:checked + .slider:before { transform: translateX(20px); }
                 </label>
             </div>
             <input type="text" id="amount" placeholder="Monto (₡)" oninput="formatCurrencyInput(this)" inputmode="decimal">
-            <input type="text" id="desc" placeholder="Detalle...">
+            
+            <div class="tags-container">
+                <input type="text" id="desc" placeholder="Detalle..." oninput="onDescTagInput(this)" autocomplete="off">
+                <button type="button" class="tags-btn-icon" onclick="toggleTagsDropdown(event)">🏷️</button>
+                <div id="tags-dropdown" class="tags-dropdown"></div>
+            </div>
             
             <label class="input-label" style="margin-top: 5px; color:#aaa;">Fecha y Hora del Registro</label>
             <input type="datetime-local" id="main-date-input" step="1" style="margin-bottom: 15px; font-weight: bold; background: #0b0b0b; border-color: #333;">
@@ -270,7 +286,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.0 (NUBE)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.4 (NUBE)</div>
 </div>
 
 <div id="help-card">
@@ -281,7 +297,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <input type="file" id="table-file-input" accept="image/*" style="display:none" onchange="processTableFile(this)">
 
-<div id="imgModal" class="modal" style="z-index: 12000;">
+<div id="imgModal" class="modal" style="z-index: 62000;">
     <div class="modal-content-wrapper" style="max-width: 95vw; padding: 5px; position: relative;">
         <span class="close-x" onclick="closeModal('imgModal')">×</span>
         <button class="btn-icon" onclick="deleteCurrentZoomedImage()" style="position: absolute; top: 10px; left: 15px; color: #ff3b3b; font-size: 1.5rem; z-index: 101; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 5px;"><i class="fas fa-trash"></i></button>
@@ -297,8 +313,8 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="ajustes-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('ajustes-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Ajustes y Gestión de Créditos</h3><p style="color:#ffcc00; font-size:0.65rem; margin-bottom:12px; font-weight:bold; line-height:1.2;">⚠️ SINCRONIZAR SALDO: Fuerza el monto en el cuadro para igualar tu dinero real físico o bancario ignorando errores del pasado.</p><button class="btn btn-cap" onclick="executeEntry('EFECTIVO', 'CAP_BASE')">FIJAR SALDO REAL: EFECTIVO</button><button class="btn btn-cap" onclick="executeEntry('BANCO', 'CAP_BASE')">FIJAR SALDO REAL: BANCO</button><hr style="border:1px solid #333; margin:15px 0;"><button class="btn btn-grey" onclick="executeEntry('CRÉDITO', 'CREDIT_PENDING')">📝 REGISTRAR CRÉDITO PENDIENTE</button></div></div>
 
-<div id="history-modal" class="modal" style="z-index: 9999;"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('history-modal')">×</span><h3 id="modal-title" style="color:white; margin-bottom:15px;"></h3><div id="modal-content"></div></div></div>
-<div id="custom-dialog" class="modal"><div class="modal-content-wrapper" id="custom-dialog-wrapper" style="text-align:center;"><h3 id="dialog-title">Aviso</h3><div id="dialog-msg" style="color:#ccc; margin-bottom: 20px;"></div><div id="dialog-buttons" style="display:flex; gap:10px; margin-top:20px;"></div></div></div>
+<div id="history-modal" class="modal" style="z-index: 61000;"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('history-modal')">×</span><h3 id="modal-title" style="color:white; margin-bottom:15px;"></h3><div id="modal-content"></div></div></div>
+<div id="custom-dialog" class="modal" style="z-index: 70000;"><div class="modal-content-wrapper" id="custom-dialog-wrapper" style="text-align:center;"><h3 id="dialog-title">Aviso</h3><div id="dialog-msg" style="color:#ccc; margin-bottom: 20px;"></div><div id="dialog-buttons" style="display:flex; gap:10px; margin-top:20px;"></div></div></div>
 
 <script>
 // ==========================================
@@ -325,6 +341,9 @@ let trashMovements = JSON.parse(localStorage.getItem('copo_trash')) || [];
 let virtualProfitBase = parseFloat(localStorage.getItem('copo_virtual_profit')) || 0;
 let lastResetDate = localStorage.getItem('copo_last_reset') || new Date(0).toISOString();
 let bizData = JSON.parse(localStorage.getItem('copo_biz_data')) || { name: "CoPo Admin", owner: "", logo: "" };
+
+// INYECCIÓN DE SISTEMA DE ETIQUETAS INDEPENDIENTES EN STORAGE
+let savedTags = JSON.parse(localStorage.getItem('copo_tags')) || ['Mayca', 'Palí', 'Gasolina', 'Planilla', 'Uso Externo Personal', 'Luz', 'Alquiler'];
 
 let currentUploadContext = { id: null, staffIdx: null };
 let selectedCreditId = null; 
@@ -355,6 +374,14 @@ window.onload = function() {
     
     gapiLoad();
     gisInit();
+
+    // Evento global para cerrar el menú flotante de etiquetas al tocar fuera del contenedor
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.tags-container')) {
+            const dd = document.getElementById('tags-dropdown');
+            if (dd) dd.style.display = 'none';
+        }
+    });
 };
 
 function gapiLoad() { gapi.load('client', initializeGapiClient); }
@@ -690,7 +717,7 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "9.0", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData
+        version: "9.4", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
@@ -716,6 +743,11 @@ function importDataBackup(input) {
                 localStorage.setItem('copo_virtual_profit', importedPackage.copo_virtual_profit || 0);
                 localStorage.setItem('copo_last_reset', importedPackage.copo_last_reset || new Date(0).toISOString());
                 
+                if(importedPackage.copo_tags) {
+                    localStorage.setItem('copo_tags', JSON.stringify(importedPackage.copo_tags));
+                    savedTags = importedPackage.copo_tags;
+                }
+
                 let bData = importedPackage.bizData || { name: "CoPo Admin", owner: "", logo: "" };
                 localStorage.setItem('copo_biz_data', JSON.stringify(bData));
 
@@ -888,7 +920,7 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
 function deleteStaffMovement(staffIndex, moveId) { showConfirm("¿Eliminar este registro?", () => { const move = staff[staffIndex].shifts.find(sh => sh.id === moveId); if (move) { staff[staffIndex].debt -= move.earned; staff[staffIndex].shifts = staff[staffIndex].shifts.filter(sh => sh.id !== moveId); saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(staffIndex); } }); }
 function addHours(i) { const s = staff[i], inV = document.getElementById(`dt-in-${i}`).value, outV = document.getElementById(`dt-out-${i}`).value; if(!inV || !outV) return showMsg("Faltan horas"); const diff = (new Date(outV) - new Date(inV)) / 3600000; if(diff <= 0) return showMsg("Error"); let ord = (s.useExtras && diff > 8) ? 8 : diff, ext = (s.useExtras && diff > 8) ? diff - 8 : 0, earned = (ord * s.rate) + (ext * s.rate * 1.5); s.debt += earned; if(!s.shifts) s.shifts = []; s.shifts.unshift({ id: Date.now(), date: new Date().toISOString(), ord, ext, earned, type: 'SHIFT', img: "" }); s.activeIn = ""; saveStaff(); renderStaff(); document.getElementById(`dt-out-${i}`).value = ""; }
 
-function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) staff[i].shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById(`adv-desc-${i}`).value = ""; }
+function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) staff[i].shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById('adv-desc-' + i).value = ""; }
 function resetDebt(i) { if(!staff[i].shifts) return showMsg("No hay sueldo pendiente."); let tOrd = 0, tExt = 0, sueldoPuro = 0, fechas = []; staff[i].shifts.forEach(sh => { if(sh.type === 'SHIFT' || sh.type === 'ADVANCE' || sh.type === 'PAYMENT_SUELDO') sueldoPuro += sh.earned; if(sh.type === 'SHIFT') { tOrd += sh.ord; tExt += sh.ext; fechas.push(new Date(sh.date).getTime()); } }); if(sueldoPuro <= 0) return showMsg("No hay sueldo pendiente."); fechas.sort((a,b) => a - b); let fDesde = fechas.length > 0 ? new Date(fechas[0]).toISOString() : new Date().toISOString(), fHasta = fechas.length > 0 ? new Date(fechas[fechas.length - 1]).toISOString() : new Date().toISOString(), detail = `Sueldo: ${getFormatedTime(tOrd)} ord` + (tExt > 0 ? ` + ${getFormatedTime(tExt)} ext` : ''); showConfirm(`¿Liquidar sueldo de ₡${formatVisual(sueldoPuro)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -sueldoPuro, type: 'PAYMENT_SUELDO', desc: detail, img: "", metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } }); staff[i].debt -= sueldoPuro; saveStaff(); renderStaff(); }); }
 function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose); let metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : null; if(metaCopia) { if(metaCopia.textHorasOrd !== undefined && metaCopia.horasOrd === undefined) metaCopia.horasOrd = metaCopia.textHorasOrd; if(metaCopia.textHorasExt !== undefined && metaCopia.horasExt === undefined) metaCopia.horasExt = metaCopia.textHorasExt; } else { metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: 8.33 }; } showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); }); }
 
@@ -1073,12 +1105,120 @@ function processSecureSystemClear() {
     }
 }
 
+// LOGÍSTICA DE MANEJO DE ETIQUETAS JAVASCRIPT
 function closeDialogResetStyles() {
     const dialogWrapper = document.getElementById('custom-dialog-wrapper');
     dialogWrapper.style.borderColor = "#333";
     dialogWrapper.style.boxShadow = "none";
     document.getElementById('dialog-title').style.color = "white";
     closeDialog();
+}
+
+function saveTagsToStorage() {
+    localStorage.setItem('copo_tags', JSON.stringify(savedTags));
+}
+
+function toggleTagsDropdown(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('tags-dropdown');
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        renderTagsOptions(document.getElementById('desc').value.trim(), true);
+    }
+}
+
+function onDescTagInput(input) {
+    if (input.value === "") {
+        document.getElementById('tags-dropdown').style.display = 'none';
+        return;
+    }
+    renderTagsOptions(input.value.trim(), false);
+}
+
+function renderTagsOptions(typedText, forceShowAll = false) {
+    const dropdown = document.getElementById('tags-dropdown');
+    dropdown.innerHTML = "";
+    
+    let matchedTags = [];
+    if (forceShowAll || !typedText) {
+        matchedTags = [...savedTags];
+    } else {
+        matchedTags = savedTags.filter(t => t.toLowerCase().includes(typedText.toLowerCase()));
+    }
+    
+    // Inyectar las etiquetas encontradas
+    matchedTags.forEach(tag => {
+        const item = document.createElement('div');
+        item.className = 'tags-item';
+        
+        // Contenedor del texto interactivo de selección
+        const textSpan = document.createElement('span');
+        textSpan.style.flex = "1";
+        textSpan.style.display = "flex";
+        textSpan.style.alignItems = "center";
+        textSpan.innerHTML = `<i class="fas fa-tag" style="color: #0026ff; margin-right: 8px;"></i>${tag}`;
+        textSpan.onclick = () => selectTagOption(tag);
+        
+        // Botón con icono de basura para remover la etiqueta de forma independiente
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.style.background = 'none';
+        removeBtn.style.border = 'none';
+        removeBtn.style.color = '#ff3b3b';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.style.padding = '4px 8px';
+        removeBtn.style.outline = 'none';
+        removeBtn.innerHTML = `<i class="fas fa-trash-alt"></i>`;
+        removeBtn.onclick = (e) => removeTagOption(e, tag);
+        
+        item.appendChild(textSpan);
+        item.appendChild(removeBtn);
+        dropdown.appendChild(item);
+    });
+    
+    // Si escribió algo nuevo que no está registrado, habilitar botón flotante invisible de creación
+    if (typedText && !savedTags.some(t => t.toLowerCase() === typedText.toLowerCase())) {
+        const addItem = document.createElement('div');
+        addItem.className = 'tags-item tags-add-btn';
+        addItem.innerHTML = `<span><i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Agregar "${typedText}" como etiqueta</span>`;
+        addItem.onclick = () => addNewTagOption(typedText);
+        dropdown.appendChild(addItem);
+    }
+    
+    if (dropdown.children.length > 0) {
+        dropdown.style.display = 'block';
+    } else {
+        dropdown.style.display = 'none';
+    }
+}
+
+function removeTagOption(event, tag) {
+    event.stopPropagation(); // Evitar que el clic active la selección en la barra
+    showConfirm(`¿Deseas eliminar permanentemente la etiqueta "<b>${tag}</b>"?`, () => {
+        savedTags = savedTags.filter(t => t !== tag);
+        saveTagsToStorage();
+        
+        // Refrescar el menú desplegable con el texto que esté escrito actualmente
+        const descInp = document.getElementById('desc');
+        const currentVal = descInp ? descInp.value.trim() : "";
+        renderTagsOptions(currentVal, !currentVal);
+    });
+}
+
+function selectTagOption(tag) {
+    document.getElementById('desc').value = tag;
+    document.getElementById('tags-dropdown').style.display = 'none';
+}
+
+function addNewTagOption(tag) {
+    const cleanTag = tag.trim();
+    if (cleanTag && !savedTags.some(t => t.toLowerCase() === cleanTag.toLowerCase())) {
+        savedTags.push(cleanTag);
+        saveTagsToStorage();
+        showMsg(`Etiqueta "${cleanTag}" guardada con éxito.`);
+    }
+    selectTagOption(cleanTag);
 }
 
 function updateBodyScroll() {
@@ -1337,7 +1477,6 @@ function openMethodModal(t) {
     document.getElementById('method-modal').style.display = 'flex'; 
     updateBodyScroll();
 }
-// CORRECCIÓN EXACTA AQUÍ: Cambiado .style.none por .style.display = 'none' para que la ventana cierre de verdad y reactive los clics
 function closeMethodModal() { document.getElementById('method-modal').style.display = 'none'; updateBodyScroll(); }
 
 function openUsoExternoModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('uso-externo-modal').style.display = 'flex'; updateBodyScroll(); }
@@ -1388,5 +1527,5 @@ function executeEntry(m, ot = null) {
 }
 </script>
 </body>
-</html> Funciones Completas (9.2)
+</html>
 

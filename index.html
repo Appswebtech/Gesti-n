@@ -305,9 +305,9 @@ input:checked + .slider:before { transform: translateX(20px); }
     </div>
 </div>
 
-<div id="method-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeMethodModal('method-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Método de Pago</h3><button class="btn btn-pay" onclick="executeEntry('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="executeEntry('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="executeEntry('SIMPE')">📲 SIMPE</button><button class="btn btn-pay" onclick="executeEntry('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
+<div id="method-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeMethodModal('method-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Método de Pago</h3><button class="btn btn-pay" onclick="executeEntry('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="executeEntry('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="executeEntry('SINPE')">📲 SINPE</button><button class="btn btn-pay" onclick="executeEntry('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
 
-<div id="credit-release-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('credit-release-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Liberar Crédito: ¿Cómo pagaron?</h3><button class="btn btn-pay" onclick="releaseCreditToCashflow('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('SIMPE')">📲 SIMPE</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
+<div id="credit-release-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('credit-release-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Liberar Crédito: ¿Cómo pagaron?</h3><button class="btn btn-pay" onclick="releaseCreditToCashflow('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('SINPE')">📲 SINPE</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
 
 <div id="uso-externo-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('uso-externo-modal')">×</span><h3 style="color:white; margin-bottom:10px;">Gasto Personal / Uso Externo</h3><p style="color:#aaa; font-size:0.75rem; margin-top:0; margin-bottom:20px; line-height:1.3;">Selecciona de dónde retirarás este dinero. No afectará las ganancias contables del negocio.</p><button class="btn btn-out" onclick="executeEntry('EFECTIVO', 'ADJ_OUT')">💵 RETIRAR DE EFECTIVO</button><button class="btn btn-out" onclick="executeEntry('BANCO', 'ADJ_OUT')">🏦 RETIRAR DE BANCO</button></div></div>
 
@@ -764,11 +764,26 @@ function importDataBackup(input) {
     reader.readAsText(file);
 }
 
+// --- CIRUGÍA QUIRÚRGICA EN EL BUSCADOR RÁPIDO INTERMITENTE (SINPE/SIMPE/SIMPLE) ---
 function filtrarMovimientos() {
-    const v = document.getElementById('buscador').value.toLowerCase();
+    const v = document.getElementById('buscador').value.toLowerCase().trim();
     let countRows = 0;
+    
+    // Evaluamos de antemano si el usuario está buscando dinero electrónico por texto o dictado
+    const esBusquedaElectronica = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
+    
     Array.from(document.getElementById('history-body').rows).forEach(r => { 
-        let match = r.innerText.toLowerCase().includes(v);
+        let textLinea = r.innerText.toLowerCase();
+        let match = false;
+        
+        if (esBusquedaElectronica) {
+            // Si la consulta es una variante, forzamos coincidencia si la fila contiene cualquiera de los términos comunes
+            match = textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple");
+        } else {
+            // Flujo nativo estándar intacto para el resto de palabras clave o montos
+            match = textLinea.includes(v);
+        }
+        
         r.style.display = match ? "" : "none"; 
         if(match) countRows++;
     });
@@ -1298,7 +1313,6 @@ function deleteMovement(id) {
     }); 
 }
 
-// EDICIÓN EN LA CAJA DE MOVIMIENTO
 function editMovement(id) {
     const m = movements.find(x => x.id === id); if(!m) return;
     const d = new Date(m.date); const localISO = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19);
@@ -1310,7 +1324,7 @@ function editMovement(id) {
         html += `<label class="input-label">Fecha y Hora</label><input type="datetime-local" id="edit-date" step="1" value="${localISO}"><label class="input-label">Método / Cuenta</label><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
                 <button class="btn ${m.method === 'EFECTIVO' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='EFECTIVO'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">💵 EFECTIVO</button>
                 <button class="btn ${m.method === 'TARJETA' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='TARJETA'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">💳 TARJETA</button>
-                <button class="btn ${m.method === 'SIMPE' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='SIMPE'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">📲 SIMPE</button>
+                <button class="btn ${m.method === 'SINPE' || m.method === 'SIMPE' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='SINPE'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">📲 SINPE</button>
                 <button class="btn ${m.method === 'TRANSFERENCIA' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-method').value='TRANSFERENCIA'; updateEditMethodUI(this)" style="padding:10px; font-size:0.7rem; color:white;">🏦 TRANSF.</button>
             </div><input type="hidden" id="temp-method" value="${m.method}"><label class="input-label">Tipo de Movimiento</label><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
                 <button class="btn ${m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CREDIT_PENDING' ? 'btn-in' : 'btn-pay'}" onclick="document.getElementById('temp-dir').value='IN'; updateEditTypeUI(this)" style="padding:10px; font-size:0.7rem; color:white;">📥 INGRESO / ENTRADA</button>
@@ -1397,24 +1411,39 @@ function resetPeriodProfit() {
     }); 
 }
 
+// --- CIRUGÍA QUIRÚRGICA REALIZADA EN EL MOTOR DE REPORTES POR FECHAS (NORMALIZACIÓN SINPE/SIMPE) ---
 function searchInPeriod() { 
     const f = document.getElementById('c-from').value, t = document.getElementById('c-to').value, kw = document.getElementById('c-keyword').value.toLowerCase().trim(), incAdj = document.getElementById('include-adj-report').checked; if(!f || !t) return showMsg("Faltan fechas"); 
     let i=0, e=0, matches = []; const fT = new Date(f + "T00:00:00").toISOString(), tT = new Date(t + "T23:59:59").toISOString(); 
     
     movements.forEach(m => { 
-        if(m.date >= fT && m.date <= tT && (kw === "" || m.desc.toLowerCase().includes(kw))) { 
+        if(m.date >= fT && m.date <= tT) { 
             if (m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') return;
 
-            if (m.type === 'IN') { 
-                i += m.amount; 
-                matches.push(m); 
-            } else if (m.type === 'OUT') { 
-                e += m.amount; 
-                matches.push(m); 
-            } else if (m.type === 'ADJ_OUT') {
-                if (incAdj) {
+            // Extraemos los strings clave del movimiento actual para cruzarlos contra la palabra clave (kw)
+            let buscaMetodo = m.method ? m.method.toLowerCase() : "";
+            let buscaDesc = m.desc ? m.desc.toLowerCase() : "";
+            let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : "";
+
+            // NORMALIZACIÓN QUIRÚRGICA: Si el registro contiene "simpe" o "sinpe", acoplamos ambas opciones para blindar el buscador
+            if (buscaMetodo.includes("simpe") || buscaMetodo.includes("sinpe")) {
+                buscaMetodo = "simpe sinpe";
+            }
+
+            // El filtro se cumple si está vacío, o si hace match en Detalle, Método de pago o Tipo "Uso Externo"
+            if (kw === "" || buscaDesc.includes(kw) || buscaMetodo.includes(kw) || buscaTipoUsExt.includes(kw)) {
+                if (m.type === 'IN') { 
+                    i += m.amount; 
+                    matches.push(m); 
+                } else if (m.type === 'OUT') { 
                     e += m.amount; 
-                    matches.push(m);
+                    matches.push(m); 
+                } else if (m.type === 'ADJ_OUT') {
+                    // Si el switch está encendido O si el usuario escribió un filtro vinculado a uso externo, calculamos y listamos el movimiento
+                    if (incAdj || kw !== "") {
+                        e += m.amount; 
+                        matches.push(m);
+                    }
                 }
             }
         } 

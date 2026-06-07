@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 9.4 - Edición Nube</title>
+<title>Gestión Total 9.6 - Edición Nube</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -119,7 +119,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 9.4 (NUBE)</div>
+    <div class="version-tag">VERSIÓN 9.6 (NUBE)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -238,6 +238,22 @@ input:checked + .slider:before { transform: translateX(20px); }
             <input type="text" id="staff-rate" placeholder="Precio hora (₡)" oninput="formatCurrencyInput(this)" inputmode="decimal">
             <button class="btn btn-pay help-trigger" onclick="addStaff()" data-title="Agregar Personal" data-help="Crea la ficha de un nuevo trabajador asignándole su salario por hora.">AGREGAR EMPLEADO</button>
         </div>
+        
+        <div class="form-box" style="border: 1px solid #ffcc00; background: rgba(255, 204, 0, 0.02);">
+            <h4 style="margin-top:0; color:#ffcc00;"><i class="fas fa-calculator" style="margin-right:8px;"></i> Reporte Maestro de Planilla</h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                <div>
+                    <span style="font-size:0.6rem; color:#888; font-weight:bold; margin-left:5px;">DESDE</span>
+                    <input type="date" id="global-staff-from" style="margin:0;">
+                </div>
+                <div>
+                    <span style="font-size:0.6rem; color:#888; font-weight:bold; margin-left:5px;">HASTA</span>
+                    <input type="date" id="global-staff-to" style="margin:0;">
+                </div>
+            </div>
+            <button class="btn btn-cap" style="margin:0; width:100%; height:46px;" onclick="executeGlobalStaffQuery()"><i class="fas fa-users-cog" style="margin-right:8px;"></i> CONSULTAR PERIODO GLOBAL</button>
+        </div>
+        
         <div id="staff-list"></div>
     </div>
 
@@ -286,7 +302,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.4 (NUBE)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.6 (NUBE)</div>
 </div>
 
 <div id="help-card">
@@ -525,10 +541,8 @@ function formatDateSlash(isoString) {
     return `${day}/${month}/${d.getFullYear()}`;
 }
 
-// --- MOTOR DE CÁLCULO Y LOGÍSTICA VISUAL INVERTIDA VERSIÓN 9.0 ---
 function getFormatedTime(h) { const totalMin = Math.round(h * 60); return `${Math.floor(totalMin/60)}h ${totalMin%60}m`; }
 
-// AJUSTE REALIZADO: Ahora decimals tiene un valor por defecto de 2 para asegurar céntimos en todo lado.
 function formatVisual(num, decimals = 2) { 
     const privacy = document.getElementById('privacy-switch')?.checked;
     if (privacy) return "****";
@@ -540,7 +554,6 @@ function formatVisual(num, decimals = 2) {
 
 function cleanAmount(val) { return parseFloat(val.toString().replace(/\./g, "").replace(/,/g, ".")) || 0; }
 
-// ENRUTADOR DE SEGUNDOS EN RELOJ EN VIVO
 function setMainDateToNow() {
     if (userInterruptedClock) return; 
     const now = new Date();
@@ -554,13 +567,11 @@ function updateUI() {
     const body = document.getElementById('history-body'); body.innerHTML = "";
     let tin = 0, tout = 0, mBank = 0, mCash = 0;
     
-    // 1. EL MOTOR MATEMÁTICO: Ordenamiento cronológico puro para consolidación exacta de saldos
     movements.sort((x, y) => {
         let diff = new Date(x.date) - new Date(y.date);
         if (diff === 0) return x.id - y.id; 
         return diff;
     });
-    // Sincronizar permanentemente
     localStorage.setItem('copo_data', JSON.stringify(movements));
 
     let lastCapEfectivo = null, lastCapBanco = null;
@@ -571,7 +582,6 @@ function updateUI() {
     mCash = lastCapEfectivo ? lastCapEfectivo.amount : 0;
     mBank = lastCapBanco ? lastCapBanco.amount : 0;
 
-    // Capturar cortes basados en el ID único (Momento real de creación)
     let cutOffEfectivoId = lastCapEfectivo ? lastCapEfectivo.id : 0;
     let cutOffBancoId = lastCapBanco ? lastCapBanco.id : 0;
 
@@ -584,7 +594,6 @@ function updateUI() {
         let isAdjustment = (m.type === 'ADJ_IN' || m.type === 'ADJ_OUT');
 
         let affectsProfit = false;
-        // CIRUGÍA 9.0 PROFUNDA: Si el switch principal está APAGADO (affect === false), NO afecta la ganancia bajo ninguna circunstancia.
         if (!isAdjustment && affect) {
             if (!m.historical) {
                 affectsProfit = (m.date > lastResetDate);
@@ -603,7 +612,6 @@ function updateUI() {
                 let isEfectivo = (m.method === 'EFECTIVO' || m.method === '💵 EFECTIVO');
                 let effect = (m.type === 'IN' || m.type === 'ADJ_IN') ? m.amount : -m.amount;
                 
-                // LÓGICA POR ID: Aquí el switch de flujo sigue mandando para proteger el dinero real contado
                 if (isEfectivo) {
                     if (m.id > cutOffEfectivoId) mCash += effect;
                 } else {
@@ -615,7 +623,6 @@ function updateUI() {
 
     let visibleCounter = 0;
     
-    // 2. EL MOTOR VISUAL PERFECCIONADO: Ordenamiento uniforme (Más nuevo arriba)
     let displayMovements = [...movements];
     displayMovements.sort((x, y) => {
         let diff = new Date(y.date) - new Date(x.date);
@@ -632,7 +639,6 @@ function updateUI() {
         
         let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') ? m.amount : -m.amount;
         
-        // CIRUGÍA 9.0 VISUAL: Filtro prioritario de color para Aguinaldo en amarillo
         let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : (isUsoExterno ? 'adj-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')))));
         const imgBtn = m.img ? `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">` : `<button class="btn-add-img" onclick="triggerFileSelect(${m.id})"><i class="fas fa-plus-circle"></i></button>`;
         
@@ -717,7 +723,7 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "9.4", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
+        version: "9.6", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
@@ -751,7 +757,7 @@ function importDataBackup(input) {
                 let bData = importedPackage.bizData || { name: "CoPo Admin", owner: "", logo: "" };
                 localStorage.setItem('copo_biz_data', JSON.stringify(bData));
 
-                secure_pin_hash = importedPackage.copo_pin_hash; movements = importedPackage.copo_data; staff = importedPackage.copo_staff; cierres = importedPackage.copo_cierres || []; trashMovements = importedPackage.copo_trash || []; virtualProfitBase = parseFloat(importedPackage.copo_virtual_profit || 0); lastResetDate = importedPackage.copo_last_reset || new Date(0).toISOString(); bizData = bData;
+                secure_pin_hash = importedPackage.copo_pin_hash; movements = importedPackage.copo_data; staff = importedPackage.copo_staff; cierres = importedPackage.cierres || []; trashMovements = importedPackage.copo_trash || []; virtualProfitBase = parseFloat(importedPackage.copo_virtual_profit || 0); lastResetDate = importedPackage.copo_last_reset || new Date(0).toISOString(); bizData = bData;
                 
                 if(bizData.name) document.getElementById('biz-name-input').value = bizData.name;
                 if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner;
@@ -764,12 +770,10 @@ function importDataBackup(input) {
     reader.readAsText(file);
 }
 
-// --- CIRUGÍA QUIRÚRGICA EN EL BUSCADOR RÁPIDO INTERMITENTE (SINPE/SIMPE/SIMPLE) ---
 function filtrarMovimientos() {
     const v = document.getElementById('buscador').value.toLowerCase().trim();
     let countRows = 0;
     
-    // Evaluamos de antemano si el usuario está buscando dinero electrónico por texto o dictado
     const esBusquedaElectronica = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
     
     Array.from(document.getElementById('history-body').rows).forEach(r => { 
@@ -777,10 +781,8 @@ function filtrarMovimientos() {
         let match = false;
         
         if (esBusquedaElectronica) {
-            // Si la consulta es una variante, forzamos coincidencia si la fila contiene cualquiera de los términos comunes
             match = textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple");
         } else {
-            // Flujo nativo estándar intacto para el resto de palabras clave o montos
             match = textLinea.includes(v);
         }
         
@@ -814,7 +816,6 @@ function renderStaff() {
             });
         }
 
-        // CÁLCULO EN TIEMPO REAL DE HORAS PENDIENTES DE LIQUIDACIÓN
         let currentOrd = 0, currentExt = 0;
         let latestPaymentId = 0;
         if(s.shifts) {
@@ -889,7 +890,6 @@ function renderStaff() {
     });
 }
 
-// HISTORIAL DE EMPLEADOS AJUSTADO CON EL NUEVO COLOR DE AGUINALDO
 function openStaffHistory(i) {
     let h = `<div class="history-wrapper"><table><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:center">Fact.</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>`;
     if(staff[i].shifts) {
@@ -907,7 +907,6 @@ function openStaffHistory(i) {
     openModal("Actividad: " + staff[i].name, h + "</tbody></table></div>");
 }
 
-// CIRUGÍA DE PRECISIÓN EN EL MOTOR DE DESGLOSE DE RECIBO DE PLANILLA
 function viewStaffShiftInvoice(staffIdx, shiftId) {
     const s = staff[staffIdx], sh = s.shifts.find(x => x.id === shiftId); if (!sh) return showMsg("Registro no encontrado.");
     let tituloHtml = "Desglose de Registro", htmlContent = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4;"><p><b>Empleado:</b> ${s.name}</p><p><b>Fecha de Registro:</b> ${getFormatedDate(sh.date)}</p><hr style="border:1px solid #222; margin:10px 0;">`;
@@ -935,8 +934,56 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
 function deleteStaffMovement(staffIndex, moveId) { showConfirm("¿Eliminar este registro?", () => { const move = staff[staffIndex].shifts.find(sh => sh.id === moveId); if (move) { staff[staffIndex].debt -= move.earned; staff[staffIndex].shifts = staff[staffIndex].shifts.filter(sh => sh.id !== moveId); saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(staffIndex); } }); }
 function addHours(i) { const s = staff[i], inV = document.getElementById(`dt-in-${i}`).value, outV = document.getElementById(`dt-out-${i}`).value; if(!inV || !outV) return showMsg("Faltan horas"); const diff = (new Date(outV) - new Date(inV)) / 3600000; if(diff <= 0) return showMsg("Error"); let ord = (s.useExtras && diff > 8) ? 8 : diff, ext = (s.useExtras && diff > 8) ? diff - 8 : 0, earned = (ord * s.rate) + (ext * s.rate * 1.5); s.debt += earned; if(!s.shifts) s.shifts = []; s.shifts.unshift({ id: Date.now(), date: new Date().toISOString(), ord, ext, earned, type: 'SHIFT', img: "" }); s.activeIn = ""; saveStaff(); renderStaff(); document.getElementById(`dt-out-${i}`).value = ""; }
 
-function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) staff[i].shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById('adv-desc-' + i).value = ""; }
-function resetDebt(i) { if(!staff[i].shifts) return showMsg("No hay sueldo pendiente."); let tOrd = 0, tExt = 0, sueldoPuro = 0, fechas = []; staff[i].shifts.forEach(sh => { if(sh.type === 'SHIFT' || sh.type === 'ADVANCE' || sh.type === 'PAYMENT_SUELDO') sueldoPuro += sh.earned; if(sh.type === 'SHIFT') { tOrd += sh.ord; tExt += sh.ext; fechas.push(new Date(sh.date).getTime()); } }); if(sueldoPuro <= 0) return showMsg("No hay sueldo pendiente."); fechas.sort((a,b) => a - b); let fDesde = fechas.length > 0 ? new Date(fechas[0]).toISOString() : new Date().toISOString(), fHasta = fechas.length > 0 ? new Date(fechas[fechas.length - 1]).toISOString() : new Date().toISOString(), detail = `Sueldo: ${getFormatedTime(tOrd)} ord` + (tExt > 0 ? ` + ${getFormatedTime(tExt)} ext` : ''); showConfirm(`¿Liquidar sueldo de ₡${formatVisual(sueldoPuro)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -sueldoPuro, type: 'PAYMENT_SUELDO', desc: detail, img: "", metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } }); staff[i].debt -= sueldoPuro; saveStaff(); renderStaff(); }); }
+function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) status.shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById('adv-desc-' + i).value = ""; }
+
+/* CIRUGÍA DE PRECISIÓN APLICADA EN RESETDEBT: FILTRADO EXACTO POR LATESTPAYMENTID */
+function resetDebt(i) { 
+    if(!staff[i].shifts) return showMsg("No hay sueldo pendiente."); 
+    
+    let latestPaymentId = 0;
+    staff[i].shifts.forEach(sh => {
+        if(sh.type === 'PAYMENT_SUELDO' && sh.id > latestPaymentId) {
+            latestPaymentId = sh.id;
+        }
+    });
+    
+    let tOrd = 0, tExt = 0, sueldoPuro = 0, fechas = []; 
+    staff[i].shifts.forEach(sh => { 
+        if(sh.id > latestPaymentId) {
+            if(sh.type === 'SHIFT' || sh.type === 'ADVANCE') {
+                sueldoPuro += sh.earned;
+            }
+            if(sh.type === 'SHIFT') { 
+                tOrd += (sh.ord || 0); 
+                tExt += (sh.ext || 0); 
+                fechas.push(new Date(sh.date).getTime()); 
+            } 
+        }
+    }); 
+    
+    if(sueldoPuro <= 0) return showMsg("No hay sueldo pendiente para liquidar."); 
+    
+    fechas.sort((a,b) => a - b); 
+    let fDesde = fechas.length > 0 ? new Date(fechas[0]).toISOString() : new Date().toISOString(), 
+        fHasta = fechas.length > 0 ? new Date(fechas[fechas.length - 1]).toISOString() : new Date().toISOString(), 
+        detail = `Sueldo: ${getFormatedTime(tOrd)} ord` + (tExt > 0 ? ` + ${getFormatedTime(tExt)} ext` : ''); 
+        
+    showConfirm(`¿Liquidar sueldo de ₡${formatVisual(sueldoPuro)}?`, () => { 
+        staff[i].shifts.unshift({ 
+            id: Date.now(), 
+            date: new Date().toISOString(), 
+            earned: -sueldoPuro, 
+            type: 'PAYMENT_SUELDO', 
+            desc: detail, 
+            img: "", 
+            metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } 
+        }); 
+        staff[i].debt -= sueldoPuro; 
+        saveStaff(); 
+        renderStaff(); 
+    }); 
+}
+
 function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose); let metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : null; if(metaCopia) { if(metaCopia.textHorasOrd !== undefined && metaCopia.horasOrd === undefined) metaCopia.horasOrd = metaCopia.textHorasOrd; if(metaCopia.textHorasExt !== undefined && metaCopia.horasExt === undefined) metaCopia.horasExt = metaCopia.textHorasExt; } else { metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: 8.33 }; } showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); }); }
 
 function openAguinaldoCalc(i) { 
@@ -1053,6 +1100,86 @@ function executeStaffPeriodQuery(i) {
     openModal(`Informe: ${staff[i].name}`, resHtml);
 }
 
+function executeGlobalStaffQuery() {
+    const fV = document.getElementById('global-staff-from').value, tV = document.getElementById('global-staff-to').value;
+    if(!fV || !tV) return showMsg("Por favor, ingrese ambas fechas para el informe maestro.");
+    const f = new Date(fV + "T00:00:00").getTime(), t = new Date(tV + "T23:59:59").getTime();
+
+    let totalG_Ord = 0, totalG_Ext = 0, totalG_Bruto = 0, totalG_Adelantos = 0, totalG_Liquidado = 0;
+    let tablaCuerpoHtml = "";
+
+    staff.forEach(s => {
+        let empOrd = 0, empExt = 0, empBruto = 0, empAdelantos = 0, empLiquidado = 0;
+        let registroActivo = false;
+
+        if(s.shifts) {
+            s.shifts.forEach(sh => {
+                const shDate = new Date(sh.date).getTime();
+                if(shDate >= f && shDate <= t) {
+                    registroActivo = true;
+                    if(sh.type === 'SHIFT') {
+                        empOrd += sh.ord;
+                        empExt += sh.ext;
+                        empBruto += sh.earned;
+                    } else if(sh.type === 'ADVANCE') {
+                        empAdelantos += Math.abs(sh.earned);
+                    } else if(sh.type === 'AGUINALDO') {
+                        empBruto += sh.earned; 
+                    } else if(sh.type === 'PAYMENT_SUELDO' || sh.type === 'PAYMENT_AGUINALDO') {
+                        empLiquidado += Math.abs(sh.earned);
+                    }
+                }
+            });
+        }
+
+        if(registroActivo) {
+            totalG_Ord += empOrd; totalG_Ext += empExt; totalG_Bruto += empBruto; 
+            totalG_Adelantos += empAdelantos; totalG_Liquidado += empLiquidado;
+
+            tablaCuerpoHtml += `<tr>
+                <td><b>${s.name}</b></td>
+                <td style="text-align:center;">${empOrd.toFixed(1)}h / ${empExt.toFixed(1)}h</td>
+                <td class="profit" style="text-align:right;">₡${formatVisual(empBruto)}</td>
+                <td class="expense" style="text-align:right;">₡${formatVisual(empAdelantos)}</td>
+                <td class="adj-color" style="text-align:right;">₡${formatVisual(empLiquidado)}</td>
+            </tr>`;
+        }
+    });
+
+    if(tablaCuerpoHtml === "") {
+        tablaCuerpoHtml = `<tr><td colspan="5" style="text-align:center; color:#666; padding:15px;">Ningún colaborador registra actividad en este rango.</td></tr>`;
+    }
+
+    let globalReportTemplate = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4; margin-bottom:15px;">
+        <p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Rango Planilla Consolidada:</b> <br><small class="adj-color">${formatDateSlash(fV)} al ${formatDateSlash(tV)}</small></p>
+        <hr style="border:1px solid #222; margin:10px 0;">
+        <p><b>Total Horas Ord. Laboradas:</b> ${totalG_Ord.toFixed(1)} h</p>
+        <p><b>Total Horas Ext. Laboradas:</b> ${totalG_Ext.toFixed(1)} h</p>
+        <p class="profit"><b>Total Bruto Acumulado:</b> ₡${formatVisual(totalG_Bruto)}</p>
+        <p class="expense"><b>Total Adelantos Otorgados:</b> ₡${formatVisual(totalG_Adelantos)}</p>
+        <p class="adj-color"><b>Total Efectivamente Pagado:</b> ₡${formatVisual(totalG_Liquidado)}</p>
+    </div>
+    <div class="history-wrapper">
+        <table style="width:100%;">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th style="text-align:center;">Ord/Ext</th>
+                    <th style="text-align:right;">Bruto</th>
+                    <th style="text-align:right;">Adelant.</th>
+                    <th style="text-align:right;">Pagado</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tablaCuerpoHtml}
+            </tbody>
+        </table>
+    </div>
+    <button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal')">CERRAR INFORME MAESTRO</button>`;
+
+    openModal("Informe Maestro de Sueldos", globalReportTemplate);
+}
+
 function confirmFullReset() {
     showConfirmCustomDanger("⚠️ <b>¡ALERTA CRÍTICA DE BORRADO!</b><br><br>Esta acción eliminará de forma irreversible toda la base de datos de Gestión Total (Contabilidad, Flujos de Caja, Planillas e Historiales).<br><br>¿Realmente deseas continuar?");
 }
@@ -1120,7 +1247,6 @@ function processSecureSystemClear() {
     }
 }
 
-// LOGÍSTICA DE MANEJO DE ETIQUETAS JAVASCRIPT
 function closeDialogResetStyles() {
     const dialogWrapper = document.getElementById('custom-dialog-wrapper');
     dialogWrapper.style.borderColor = "#333";
@@ -1162,12 +1288,10 @@ function renderTagsOptions(typedText, forceShowAll = false) {
         matchedTags = savedTags.filter(t => t.toLowerCase().includes(typedText.toLowerCase()));
     }
     
-    // Inyectar las etiquetas encontradas
     matchedTags.forEach(tag => {
         const item = document.createElement('div');
         item.className = 'tags-item';
         
-        // Contenedor del texto interactivo de selección
         const textSpan = document.createElement('span');
         textSpan.style.flex = "1";
         textSpan.style.display = "flex";
@@ -1175,7 +1299,6 @@ function renderTagsOptions(typedText, forceShowAll = false) {
         textSpan.innerHTML = `<i class="fas fa-tag" style="color: #0026ff; margin-right: 8px;"></i>${tag}`;
         textSpan.onclick = () => selectTagOption(tag);
         
-        // Botón con icono de basura para remover la etiqueta de forma independiente
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.style.background = 'none';
@@ -1192,7 +1315,6 @@ function renderTagsOptions(typedText, forceShowAll = false) {
         dropdown.appendChild(item);
     });
     
-    // Si escribió algo nuevo que no está registrado, habilitar botón flotante invisible de creación
     if (typedText && !savedTags.some(t => t.toLowerCase() === typedText.toLowerCase())) {
         const addItem = document.createElement('div');
         addItem.className = 'tags-item tags-add-btn';
@@ -1209,12 +1331,10 @@ function renderTagsOptions(typedText, forceShowAll = false) {
 }
 
 function removeTagOption(event, tag) {
-    event.stopPropagation(); // Evitar que el clic active la selección en la barra
+    event.stopPropagation(); 
     showConfirm(`¿Deseas eliminar permanentemente la etiqueta "<b>${tag}</b>"?`, () => {
         savedTags = savedTags.filter(t => t !== tag);
         saveTagsToStorage();
-        
-        // Refrescar el menú desplegable con el texto que esté escrito actualmente
         const descInp = document.getElementById('desc');
         const currentVal = descInp ? descInp.value.trim() : "";
         renderTagsOptions(currentVal, !currentVal);
@@ -1261,7 +1381,6 @@ function deleteCurrentZoomedImage() {
     });
 }
 
-// ALERTA Y CONFIRMACIONES COMUNES
 function showMsg(msg) { document.getElementById('dialog-title').innerText = "Aviso"; document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-pay" style="color:white;" onclick="closeDialog()">OK</button>`; document.getElementById('custom-dialog').style.display = 'flex'; updateBodyScroll(); }
 
 function showConfirm(msg, onConfirm) { 
@@ -1373,7 +1492,6 @@ function saveEditMovement(id) {
     }
 }
 
-// SOLUCIÓN AL DISEÑO DE PESTAÑAS Y SECCIONES
 function showTab(t) { document.getElementById('tab-contabilidad').style.display = t === 'contabilidad' ? 'block' : 'none'; document.getElementById('tab-planilla').style.display = t === 'planilla' ? 'block' : 'none'; document.getElementById('tab-configuracion').style.display = t === 'configuracion' ? 'block' : 'none'; document.getElementById('btn-tab-contabilidad').classList.toggle('active', t === 'contabilidad'); document.getElementById('btn-tab-planilla').classList.toggle('active', t === 'planilla'); }
 
 function toggleCierreSearch() { const s = document.getElementById('cierre-search'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
@@ -1411,7 +1529,6 @@ function resetPeriodProfit() {
     }); 
 }
 
-// --- CIRUGÍA QUIRÚRGICA REALIZADA EN EL MOTOR DE REPORTES POR FECHAS (NORMALIZACIÓN SINPE/SIMPE) ---
 function searchInPeriod() { 
     const f = document.getElementById('c-from').value, t = document.getElementById('c-to').value, kw = document.getElementById('c-keyword').value.toLowerCase().trim(), incAdj = document.getElementById('include-adj-report').checked; if(!f || !t) return showMsg("Faltan fechas"); 
     let i=0, e=0, matches = []; const fT = new Date(f + "T00:00:00").toISOString(), tT = new Date(t + "T23:59:59").toISOString(); 
@@ -1420,17 +1537,14 @@ function searchInPeriod() {
         if(m.date >= fT && m.date <= tT) { 
             if (m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') return;
 
-            // Extraemos los strings clave del movimiento actual para cruzarlos contra la palabra clave (kw)
             let buscaMetodo = m.method ? m.method.toLowerCase() : "";
             let buscaDesc = m.desc ? m.desc.toLowerCase() : "";
             let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : "";
 
-            // NORMALIZACIÓN QUIRÚRGICA: Si el registro contiene "simpe" o "sinpe", acoplamos ambas opciones para blindar el buscador
             if (buscaMetodo.includes("simpe") || buscaMetodo.includes("sinpe")) {
                 buscaMetodo = "simpe sinpe";
             }
 
-            // El filtro se cumple si está vacío, o si hace match en Detalle, Método de pago o Tipo "Uso Externo"
             if (kw === "" || buscaDesc.includes(kw) || buscaMetodo.includes(kw) || buscaTipoUsExt.includes(kw)) {
                 if (m.type === 'IN') { 
                     i += m.amount; 
@@ -1439,7 +1553,6 @@ function searchInPeriod() {
                     e += m.amount; 
                     matches.push(m); 
                 } else if (m.type === 'ADJ_OUT') {
-                    // Si el switch está encendido O si el usuario escribió un filtro vinculado a uso externo, calculamos y listamos el movimiento
                     if (incAdj || kw !== "") {
                         e += m.amount; 
                         matches.push(m);

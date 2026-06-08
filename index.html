@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 10.2 - Edición Nube Unificada</title>
+<title>Gestión Total 10.3 - Edición Nube Unificada</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -34,7 +34,7 @@ header { border-bottom: 2px solid #0026ff; padding-bottom: 10px; margin-bottom: 
 .card h3 { margin: 0; font-size: 0.7rem; color: #888; text-transform: uppercase; }
 .card p { margin: 8px 0 0; font-size: 1.1rem; font-weight: bold; }
 
-.profit { color: #25D366; } .expense { color: #ff3b3b; } .adj-color { color: #0026ff; } .bank-color { color: #0026ff; } .cash-color = { color: #25D366; }
+.profit { color: #25D366; } .expense { color: #ff3b3b; } .adj-color { color: #0026ff; } .bank-color { color: #0026ff; } .cash-color { color: #25D366; }
 .aguinaldo-color { color: #ffcc00 !important; }
 .balance { grid-column: span 2; border: 1px solid #0026ff; background: rgba(0, 38, 255, 0.05); }
 .profit-card { grid-column: span 2; border: 1px solid #25D366; background: rgba(37, 211, 102, 0.05); }
@@ -119,7 +119,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 10.2 (SINCRO REALTIME)</div>
+    <div class="version-tag">VERSIÓN 10.3 (SINCRO REALTIME)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -308,7 +308,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.2 (SINCRO REALTIME)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.3 (SINCRO REALTIME)</div>
 </div>
 
 <div id="help-card">
@@ -365,7 +365,7 @@ let virtualProfitBase = parseFloat(localStorage.getItem('copo_virtual_profit')) 
 let lastResetDate = localStorage.getItem('copo_last_reset') || new Date(0).toISOString();
 let bizData = JSON.parse(localStorage.getItem('copo_biz_data')) || { name: "Gestión Total", owner: "", logo: "" };
 
-// VARIABLE DE CONTROL DE PAGINACIÓN CRONOLÓGICA (10.2)
+// VARIABLE DE CONTROL DE PAGINACIÓN CRONOLÓGICA (10.3)
 window.maxVisibleMovements = 50;
 
 // INYECCIÓN DE SISTEMA DE ETIQUETAS INDEPENDIENTES EN STORAGE
@@ -428,7 +428,7 @@ window.onload = function() {
 
 function gapiLoad() { gapi.load('client', initializeGapiClient); }
 
-// 💾 PERSISTENCIA DE CONEXIÓN MULTI-DISPOSITIVO ENTRE REFRESCAMIENTOS (10.2)
+// 💾 PERSISTENCIA DE CONEXIÓN MULTI-DISPOSITIVO ENTRE REFRESCAMIENTOS (10.3)
 async function initializeGapiClient() {
     await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: GOOGLE_DISCOVERY_DOCS });
     gapiInited = true;
@@ -457,7 +457,7 @@ function handleAuthClick() {
     tokenClient.callback = async (resp) => {
         if (resp.error !== undefined) { throw (resp); }
         
-        // Guardar token en localstorage para persistir sesión activa en reloads (10.2)
+        // Guardar token en localstorage para persistir sesión activa en reloads (10.3)
         localStorage.setItem('google_access_token', resp.access_token);
         
         document.getElementById('cloud-status').innerText = "Conectado";
@@ -549,7 +549,7 @@ async function uploadImageToDrive(base64DataUrl, fileName) {
     }
 }
 
-// 📥 DESCARGAR BASE DE DATOS CON FUSIÓN INTELIGENTE ANTI-APLANADORA Y GUARDIA DE LOGO (10.2)
+// 📥 DESCARGAR BASE DE DATOS CON FUSIÓN INTELIGENTE ANTI-APLANADORA Y GUARDIA DE LOGO (10.3)
 async function pullFromCloud() {
     if (!gapiInited || !gapi.client.getToken()) return;
     try {
@@ -558,7 +558,7 @@ async function pullFromCloud() {
         
         let hasChanges = false;
         
-        // 1. Descarga y Fusión Inteligente de Movimientos Contables (Merge)
+        // 1. Descarga y Fusión Inteligente de Movimientos Contables (Merge con filtro de papelera)
         let respCont = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Contabilidad!A2:I10000" });
         let rowsCont = respCont.result.values;
         if (rowsCont && rowsCont.length > 0) {
@@ -567,16 +567,16 @@ async function pullFromCloud() {
                 desc: r[4] || '', method: r[5] || '', affectProfit: r[6] === 'SÍ', historical: r[7] === 'SÍ', img: r[8] || ''
             }));
             
-            // Fusión: Preservar ítems locales creados offline que no se han subido a la nube
+            // Fusión: Preservar ítems locales offline y filtrar contra papelera para que no vuelvan a aparecer
             let cloudIds = new Set(cloudMovements.map(m => m.id));
+            let trashIds = new Set(trashMovements.map(t => t.id));
             let localOnlyMovements = movements.filter(m => !cloudIds.has(m.id));
-            let mergedMovements = [...localOnlyMovements, ...cloudMovements];
+            let mergedMovements = [...localOnlyMovements, ...cloudMovements.filter(m => !trashIds.has(m.id))];
             
             if (JSON.stringify(mergedMovements) !== JSON.stringify(movements)) {
                 movements = mergedMovements;
                 localStorage.setItem('copo_data', JSON.stringify(movements));
                 hasChanges = true;
-                // Si había movimientos offline locales, disparamos un Push automático complementario para unificar Sheets
                 if (localOnlyMovements.length > 0) {
                     setTimeout(() => { syncToCloud(); }, 1200);
                 }
@@ -592,7 +592,6 @@ async function pullFromCloud() {
                 isOpen: false, useExtras: true, activeIn: ""
             }));
             
-            // Unificación por ID único de turno dentro de cada ficha de empleado
             let mergedStaff = [...cloudStaff];
             staff.forEach(localEmp => {
                 let matchCloud = mergedStaff.find(c => c.name.toLowerCase().trim() === localEmp.name.toLowerCase().trim());
@@ -603,7 +602,7 @@ async function pullFromCloud() {
                     let localOnlyShifts = localEmp.shifts.filter(sh => !cloudShiftIds.has(sh.id));
                     matchCloud.shifts = [...localOnlyShifts, ...matchCloud.shifts];
                     if (localOnlyShifts.length > 0) {
-                        matchCloud.debt = localEmp.debt; // Conservar cálculo local acumulativo
+                        matchCloud.debt = localEmp.debt;
                     }
                 }
             });
@@ -615,7 +614,7 @@ async function pullFromCloud() {
             }
         }
 
-        // 3. Descarga de Marcas de Identidad, Variables Contables y Sincronización Segura de PIN (10.2)
+        // 3. Descarga de Marcas de Identidad con Guardia Estricta de Logo local en Base64
         let respConf = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Configuracion!A2:B15" });
         let rowsConf = respConf.result.values;
         if (rowsConf && rowsConf.length > 0) {
@@ -627,21 +626,23 @@ async function pullFromCloud() {
             let oldTags = JSON.stringify(savedTags);
 
             rowsConf.forEach(r => {
-                // Guardia de Logo (10.2): Bloquea sobreescritura de marcas visuales si es un ciclo secundario de auto-sync
                 if (r[0] === 'biz_name' && !window.isBackgroundSyncInProgress) bizData.name = r[1];
                 if (r[0] === 'biz_owner' && !window.isBackgroundSyncInProgress) bizData.owner = r[1];
-                if (r[0] === 'biz_logo' && !window.isBackgroundSyncInProgress) bizData.logo = r[1];
+                
+                // Guardia Estricta de Logo: Bloquea la sobreescritura si el logo local es una imagen rica Base64
+                if (r[0] === 'biz_logo' && !window.isBackgroundSyncInProgress) {
+                    if (!bizData.logo || !bizData.logo.startsWith('data:')) {
+                        if (r[1]) bizData.logo = r[1];
+                    }
+                }
                 
                 if (r[0] === 'last_reset') { lastResetDate = r[1]; localStorage.setItem('copo_last_reset', lastResetDate); }
                 if (r[0] === 'virtual_profit') { virtualProfitBase = parseFloat(r[1]) || 0; localStorage.setItem('copo_virtual_profit', virtualProfitBase.toString()); }
                 if (r[0] === 'tags') { try { savedTags = JSON.parse(r[1]); localStorage.setItem('copo_tags', JSON.stringify(savedTags)); } catch(e){} }
-                
-                // Jalar el PIN encriptado y crudo desde la nube para no dejarlo botado (10.2)
                 if (r[0] === 'copo_pin_hash') { secure_pin_hash = r[1]; localStorage.setItem('copo_pin_hash', secure_pin_hash); }
                 if (r[0] === 'copo_raw_pin') { localStorage.setItem('copo_raw_pin', r[1]); }
             });
 
-            // Solo refrescar la UI visual de la marca si NO estamos en background sync y hubo mutación real
             if (!window.isBackgroundSyncInProgress && (oldBizName !== bizData.name || oldBizOwner !== bizData.owner || oldBizLogo !== bizData.logo || oldLastResetDate !== lastResetDate || oldVirtualProfitBase !== virtualProfitBase || oldTags !== JSON.stringify(savedTags))) {
                 localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
                 applyBusinessIdentity();
@@ -686,7 +687,6 @@ async function syncToCloud() {
             ]);
         });
 
-        // Inyección de PIN en la matriz de configuración para evitar fugas (10.2)
         let configRows = [
             ['Propiedad', 'Valor'], 
             ['biz_name', bizData.name || ''], 
@@ -903,7 +903,7 @@ function setMainDateToNow() {
     if (dateInput) dateInput.value = localISO;
 }
 
-// ⚡ MOTOR DE RENDIMIENTO CONTROLADO CON PAGINACIÓN DINÁMICA (10.2)
+// ⚡ MOTOR DE RENDIMIENTO CONTROLADO CON PAGINACIÓN DINÁMICA (10.3)
 function updateUI() {
     const body = document.getElementById('history-body'); body.innerHTML = "";
     let tin = 0, tout = 0, mBank = 0, mCash = 0;
@@ -928,7 +928,6 @@ function updateUI() {
 
     let resetTimestamp = new Date(lastResetDate).getTime();
 
-    // El cómputo del saldo global se ejecuta siempre sobre TODO el set en memoria
     movements.forEach(m => {
         if (m.type === 'CREDIT_PENDING') return;
 
@@ -963,7 +962,6 @@ function updateUI() {
         }
     });
 
-    // Barra buscador con in-memory filter
     const buscadorInp = document.getElementById('buscador');
     const v = buscadorInp ? buscadorInp.value.toLowerCase().trim() : "";
     const esBusquedaElectronica = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
@@ -998,7 +996,6 @@ function updateUI() {
 
         if (!match) return;
 
-        // PAGINACIÓN CRONOLÓGICA INTELIGENTE (10.2): Si no hay filtro, corta según maxVisibleMovements
         if (v === "" && renderedCount >= window.maxVisibleMovements) {
             return;
         }
@@ -1009,10 +1006,11 @@ function updateUI() {
         
         let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : (isUsoExterno ? 'adj-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')))));
         
+        // 🛠️ FACTURAS EN MODAL: Tanto Base64 como URLs en la nube abren la previsualización modal unificada dentro de la App
         let imgBtn = "";
         if (m.img) {
             if (m.img.startsWith("http")) {
-                imgBtn = `<a href="${m.img}" target="_blank" style="color:#25D366; font-size:1.2rem;"><i class="fas fa-file-invoice"></i></a>`;
+                imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.2rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`;
             } else {
                 imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`;
             }
@@ -1041,7 +1039,6 @@ function updateUI() {
 
     document.getElementById('mov-counter-val').innerText = renderedCount;
 
-    // Controlar visibilidad del contenedor de paginación (10.2)
     const ctrlArea = document.getElementById('history-controls-area');
     if (ctrlArea) {
         if (v === "" && movements.length > window.maxVisibleMovements) {
@@ -1057,7 +1054,7 @@ function updateUI() {
     document.getElementById('net-profit').innerText = "₡" + formatVisual((tin - tout) + virtualProfitBase, 2);
 }
 
-// FUNCIONES DE PAGINACIÓN CRONOLÓGICA (10.2)
+// FUNCIONES DE PAGINACIÓN CRONOLÓGICA (10.3)
 window.loadMoreMovements = function() {
     window.maxVisibleMovements += 50;
     updateUI();
@@ -1140,7 +1137,7 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "10.2", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
+        version: "10.3", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
@@ -1300,10 +1297,11 @@ function openStaffHistory(i) {
             else if(sh.type === 'PAYMENT_SUELDO') { det = `<i class="fas fa-check"></i> ${sh.desc}`; colorClass = 'adj-color'; }
             else if(sh.type === 'PAYMENT_AGUINALDO') { det = `<i class="fas fa-gift"></i> Pago Aguinaldo`; colorClass = 'aguinaldo-color'; }
             
+            // Facturas en Modal para Personal
             let imgBtn = "";
             if (sh.img) {
                 if (sh.img.startsWith("http")) {
-                    imgBtn = `<a href="${sh.img}" target="_blank" style="color:#25D366; font-size:1.1rem;"><i class="fas fa-file-invoice"></i></a>`;
+                    imgBtn = `<button class="btn-add-img" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`;
                 } else {
                     imgBtn = `<img src="${sh.img}" class="img-preview-mini" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})">`;
                 }
@@ -1559,7 +1557,7 @@ function executeGlobalStaffQuery() {
     });
 
     if(tablaCuerpoHtml === "") {
-        tablaCuerpoHtml = `<tr><td colspan="5" style="text-align:center; color:#666; padding:15px;">Ningún colaborador registra actividad en este rango.</td></tr>`;
+        tablaCuerpoHtml = `<tr><td colspan="5" style="text-align:center; color:#666; padding:15px;">Ningún colaborador registra activity en este rango.</td></tr>`;
     }
 
     let globalReportTemplate = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4; margin-bottom:15px;">
@@ -1654,7 +1652,7 @@ function processSecureSystemClear() {
         const dialogWrapper = document.getElementById('custom-dialog-wrapper');
         dialogWrapper.style.borderColor = "#ff3b3b";
         document.getElementById('dialog-title').innerText = "ERROR DE PIN";
-        document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operation fue denegada.";
+        document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operación fue denegada.";
         document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-out" style="width:100%; margin:0;" onclick="closeDialogResetStyles()">ENTENDIDO</button>`;
     }
 }
@@ -1779,7 +1777,21 @@ function updateBodyScroll() {
 function openModal(t, c) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('history-modal').style.display = 'flex'; updateBodyScroll(); }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; updateBodyScroll(); }
 
-function zoomImage(s, id = null, staffIdx = null) { currentZoomedId = id; currentZoomedStaffIdx = staffIdx; document.getElementById('imgZoom').src = s; document.getElementById('imgModal').style.display = 'flex'; updateBodyScroll(); }
+// 🛠️ REPRODUCTOR DE ENLACES DRIVE: Traduce dinámicamente links webViewLink a descarga directa para renderizar imágenes en la ventana modal
+function zoomImage(s, id = null, staffIdx = null) { 
+    currentZoomedId = id; 
+    currentZoomedStaffIdx = staffIdx; 
+    let displaySrc = s;
+    if (displaySrc && displaySrc.includes("drive.google.com")) {
+        let idMatch = displaySrc.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || displaySrc.match(/id=([a-zA-Z0-9_-]+)/);
+        if (idMatch && idMatch[1]) {
+            displaySrc = `https://docs.google.com/uc?export=download&id=${idMatch[1]}`;
+        }
+    }
+    document.getElementById('imgZoom').src = displaySrc; 
+    document.getElementById('imgModal').style.display = 'flex'; 
+    updateBodyScroll(); 
+}
 
 function deleteCurrentZoomedImage() {
     if (!currentZoomedId) return;
@@ -1795,7 +1807,7 @@ function deleteCurrentZoomedImage() {
     });
 }
 
-// 🛠️ LIMPIADOR QUIRÚRGICO DE ENLACES FANTASMA / COMPROBANTES PEGADOS (10.2)
+// 🛠️ LIMPIADOR QUIRÚRGICO DE ENLACES FANTASMA / COMPROBANTES PEGADOS (10.3)
 window.clearMovementImage = function(id) {
     const mIdx = movements.findIndex(m => m.id === id);
     if (mIdx !== -1) {
@@ -1866,7 +1878,6 @@ function editMovement(id) {
     const isMuro = m.type === 'CAP_BASE';
     let html = `<div class="form-box" style="background:transparent; border:none; padding:0;"><label class="input-label">Monto</label><input type="text" id="edit-amt" value="${formatVisual(m.amount)}" oninput="formatCurrencyInput(this)" inputmode="decimal"><label class="input-label">Detalle</label><input type="text" id="edit-dsc" value="${m.desc}">`;
 
-    // Inyectar botón de purga directa de imagen adjunta si existe enlace roto o viejo (10.2)
     if (m.img) {
         html += `<button class="btn btn-out" onclick="clearMovementImage(${id})" style="padding:10px; font-size:0.75rem; margin-bottom:12px; background:#ff3b3b; color:white; width:100%; border:none; border-radius:8px; font-weight:bold; cursor:pointer;"><i class="fas fa-image-slash"></i> QUITAR FACTURA ADJUNTA</button>`;
     }
@@ -2019,10 +2030,11 @@ function searchInPeriod() {
             let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
             let cCls = isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : 'profit');
             
+            // Facturas en Modal en Cierre de Periodo
             let imgBtn = "";
             if (m.img) {
                 if (m.img.startsWith("http")) {
-                    imgBtn = `<a href="${m.img}" target="_blank" style="color:#25D366; font-size:1.1rem;"><i class="fas fa-file-invoice"></i></a>`;
+                    imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`;
                 } else {
                     imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`;
                 }

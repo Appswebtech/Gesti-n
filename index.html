@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 9.9 - Edición Nube Unificada</title>
+<title>Gestión Total 10.0 - Edición Nube Unificada</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -119,7 +119,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 9.9 (NUBE TOTAL)</div>
+    <div class="version-tag">VERSIÓN 10.0 (SINCRO REALTIME)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -303,7 +303,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.9 (NUBE TOTAL)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.0 (SINCRO REALTIME)</div>
 </div>
 
 <div id="help-card">
@@ -358,7 +358,7 @@ let cierres = JSON.parse(localStorage.getItem('copo_cierres')) || [];
 let trashMovements = JSON.parse(localStorage.getItem('copo_trash')) || [];
 let virtualProfitBase = parseFloat(localStorage.getItem('copo_virtual_profit')) || 0;
 let lastResetDate = localStorage.getItem('copo_last_reset') || new Date(0).toISOString();
-let bizData = JSON.parse(localStorage.getItem('copo_biz_data')) || { name: "CoPo Admin", owner: "", logo: "" };
+let bizData = JSON.parse(localStorage.getItem('copo_biz_data')) || { name: "Gestión Total", owner: "", logo: "" };
 
 // INYECCIÓN DE SISTEMA DE ETIQUETAS INDEPENDIENTES EN STORAGE
 let savedTags = JSON.parse(localStorage.getItem('copo_tags')) || ['Mayca', 'Palí', 'Gasolina', 'Planilla', 'Uso Externo Personal', 'Luz', 'Alquiler'];
@@ -368,8 +368,9 @@ let selectedCreditId = null;
 window.pendingAction = null; 
 let pendingType = 'IN'; 
 
-// CONTROL INTERRUPTOR DEL RELOJ GLOBAL
+// CONTROL INTERRUPTOR DEL RELOJ GLOBAL Y AUTO-SINCRO
 let userInterruptedClock = false;
+window.isBackgroundSyncInProgress = false;
 
 window.onload = function() { 
     applyBusinessIdentity(); 
@@ -400,6 +401,21 @@ window.onload = function() {
             if (dd) dd.style.display = 'none';
         }
     });
+
+    // 🔄 BUCLE DE AUTO-SINCRONIZACIÓN OPTIMIZADO EN SEGUNDO PLANO (CADA 20 SEGUNDOS SILENCIOSO)
+    setInterval(async () => {
+        if (gapiInited && gapi.client.getToken() && !window.isBackgroundSyncInProgress) {
+            window.isBackgroundSyncInProgress = true;
+            try {
+                await pullFromCloud();
+                await syncToCloud();
+            } catch (e) {
+                console.error("Error en auto-sincronización de fondo:", e);
+            } finally {
+                window.isBackgroundSyncInProgress = false;
+            }
+        }
+    }, 20000);
 };
 
 function gapiLoad() { gapi.load('client', initializeGapiClient); }
@@ -541,13 +557,16 @@ async function pullFromCloud() {
             localStorage.setItem('copo_staff', JSON.stringify(staff));
         }
 
-        // Bajar marcas de identidad y tags
-        let respConf = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Configuracion!A2:B10" });
+        // Bajar marcas de identidad, variables de ganancia y tags
+        let respConf = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Configuracion!A2:B15" });
         let rowsConf = respConf.result.values;
         if (rowsConf && rowsConf.length > 0) {
             rowsConf.forEach(r => {
                 if (r[0] === 'biz_name') bizData.name = r[1];
                 if (r[0] === 'biz_owner') bizData.owner = r[1];
+                if (r[0] === 'biz_logo') bizData.logo = r[1];
+                if (r[0] === 'last_reset') { lastResetDate = r[1]; localStorage.setItem('copo_last_reset', lastResetDate); }
+                if (r[0] === 'virtual_profit') { virtualProfitBase = parseFloat(r[1]) || 0; localStorage.setItem('copo_virtual_profit', virtualProfitBase.toString()); }
                 if (r[0] === 'tags') { try { savedTags = JSON.parse(r[1]); localStorage.setItem('copo_tags', JSON.stringify(savedTags)); } catch(e){} }
             });
             localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
@@ -563,7 +582,7 @@ async function pullFromCloud() {
 async function syncToCloud() {
     if (!gapiInited || !gapi.client.getToken()) return;
     const statusBadge = document.getElementById('cloud-status');
-    if (statusBadge) {
+    if (statusBadge && !window.isBackgroundSyncInProgress) {
         statusBadge.innerText = "Sincronizando...";
         statusBadge.className = "status-badge";
         statusBadge.style.backgroundColor = "#ffcc00";
@@ -588,7 +607,13 @@ async function syncToCloud() {
         });
 
         let configRows = [
-            ['Propiedad', 'Valor'], ['biz_name', bizData.name || ''], ['biz_owner', bizData.owner || ''], ['tags', JSON.stringify(savedTags)]
+            ['Propiedad', 'Valor'], 
+            ['biz_name', bizData.name || ''], 
+            ['biz_owner', bizData.owner || ''], 
+            ['biz_logo', bizData.logo || ''],
+            ['last_reset', lastResetDate || new Date(0).toISOString()],
+            ['virtual_profit', virtualProfitBase.toString()],
+            ['tags', JSON.stringify(savedTags)]
         ];
 
         await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: id, range: "Contabilidad!A1:Z10000" });
@@ -606,14 +631,14 @@ async function syncToCloud() {
             spreadsheetId: id, range: "Configuracion!A1", valueInputOption: "USER_ENTERED", resource: { values: configRows }
         });
 
-        if (statusBadge) {
+        if (statusBadge && !window.isBackgroundSyncInProgress) {
             statusBadge.innerText = "Sincronizado";
             statusBadge.className = "status-badge status-connected";
             statusBadge.style.backgroundColor = ""; statusBadge.style.color = "";
         }
     } catch (err) {
         console.error("Error en el flete de datos:", err);
-        if (statusBadge) {
+        if (statusBadge && !window.isBackgroundSyncInProgress) {
             statusBadge.innerText = "Error Sinc.";
             statusBadge.className = "status-badge status-disconnected";
             statusBadge.style.backgroundColor = ""; statusBadge.style.color = "";
@@ -668,17 +693,29 @@ function updateBusinessLogo(input) {
     if (file) { 
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = (e) => {
-            bizData.logo = e.target.result;
+        reader.onload = async (e) => {
+            let dataUrl = e.target.result;
+            // Guardado e inyección local instantánea
+            bizData.logo = dataUrl;
             localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
             applyBusinessIdentity();
+            
+            // Flete binario directo a Google Drive (Si la sesión está activa)
+            if (gapiInited && gapi.client.getToken()) {
+                const cloudUrl = await uploadImageToDrive(dataUrl, `Logo_Perfil_GestionTotal_${Date.now()}_${file.name}`);
+                if (cloudUrl) {
+                    bizData.logo = cloudUrl;
+                    localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
+                    applyBusinessIdentity();
+                }
+            }
             syncToCloud();
         };
     } 
 }
 
 function saveBusinessIdentity() { 
-    bizData.name = document.getElementById('biz-name-input').value || "CoPo Admin"; 
+    bizData.name = document.getElementById('biz-name-input').value || "Gestión Total"; 
     bizData.owner = document.getElementById('owner-name-input').value; 
     localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
     applyBusinessIdentity(); 
@@ -965,12 +1002,12 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "9.8", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
+        version: "10.0", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `Respaldo_Contable_CoPo_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
     showMsg("Copia de seguridad exportada con éxito.");
 }
@@ -996,7 +1033,7 @@ function importDataBackup(input) {
                     savedTags = importedPackage.copo_tags;
                 }
 
-                let bData = importedPackage.bizData || { name: "CoPo Admin", owner: "", logo: "" };
+                let bData = importedPackage.bizData || { name: "Gestión Total", owner: "", logo: "" };
                 localStorage.setItem('copo_biz_data', JSON.stringify(bData));
 
                 secure_pin_hash = importedPackage.copo_pin_hash; movements = importedPackage.copo_data; staff = importedPackage.copo_staff; cierres = importedPackage.cierres || []; trashMovements = importedPackage.copo_trash || []; virtualProfitBase = parseFloat(importedPackage.copo_virtual_profit || 0); lastResetDate = importedPackage.copo_last_reset || new Date(0).toISOString(); bizData = bData;
@@ -1784,6 +1821,7 @@ function resetPeriodProfit() {
         localStorage.setItem('copo_last_reset', lastResetDate); 
         localStorage.setItem('copo_virtual_profit', "0"); 
         updateUI(); 
+        syncToCloud();
         showMsg("Contador de ganancias netas reiniciado con éxito.");
     }); 
 }
@@ -1870,16 +1908,18 @@ function injectPeriodToDashboardProfit(amt, f, t) {
     virtualProfitBase += parseFloat(amt || 0); 
     localStorage.setItem('copo_virtual_profit', virtualProfitBase); 
     updateUI(); 
+    syncToCloud();
     closeModal('history-modal'); 
     showMsg("Ganancia consolidada exitosamente en el cuadro principal."); 
 }
 
 function saveHistoricalCierre(f, t, total, ing, egr, kw = "") {
-    const nota = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` [Filtro: ${kw}]` : "");
+    const nota = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` - Filtro: ${kw}` : "");
     showConfirm(`¿Deseas archivar este reporte en el historial de cierres?`, () => { 
         cierres.unshift({ id: Date.now(), date: new Date().toISOString(), totalNeto: total, ingresos: ing, egresos: egr, note: nota }); 
         localStorage.setItem('copo_cierres', JSON.stringify(cierres)); 
         closeModal('history-modal'); 
+        syncToCloud();
         showMsg("Reporte guardado con éxito."); 
     });
 }

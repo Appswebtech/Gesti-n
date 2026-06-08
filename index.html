@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 10.0 - Edición Nube Unificada</title>
+<title>Gestión Total 10.1 - Edición Nube Unificada</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -119,7 +119,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 10.0 (SINCRO REALTIME)</div>
+    <div class="version-tag">VERSIÓN 10.1 (SINCRO REALTIME)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -303,7 +303,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.0 (SINCRO REALTIME)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.1 (SINCRO REALTIME)</div>
 </div>
 
 <div id="help-card">
@@ -402,7 +402,7 @@ window.onload = function() {
         }
     });
 
-    // 🔄 BUCLE DE AUTO-SINCRONIZACIÓN OPTIMIZADO EN SEGUNDO PLANO (CADA 20 SEGUNDOS SILENCIOSO)
+    // 🔄 BUCLE DE AUTO-SINCRONIZACIÓN OPTIMIZADO EN SEGUNDO PLANO (CADA 20 SEGUNDOS SILENCIOSO CON GUARDIA DE CAMBIOS)
     setInterval(async () => {
         if (gapiInited && gapi.client.getToken() && !window.isBackgroundSyncInProgress) {
             window.isBackgroundSyncInProgress = true;
@@ -528,39 +528,56 @@ async function uploadImageToDrive(base64DataUrl, fileName) {
     }
 }
 
-// 📥 DESCARGAR BASE DE DATOS COMPLETA DESDE LA NUBE (PULL)
+// 📥 DESCARGAR BASE DE DATOS COMPLETA DESDE LA NUBE (PULL CON GUARDIA DE CAMBIOS REALES)
 async function pullFromCloud() {
     if (!gapiInited || !gapi.client.getToken()) return;
     try {
         let id = await checkAndCreateSpreadsheet();
         if (!id) return;
         
+        let hasChanges = false;
+        
         // Bajar movimientos
         let respCont = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Contabilidad!A2:I10000" });
         let rowsCont = respCont.result.values;
         if (rowsCont && rowsCont.length > 0) {
-            movements = rowsCont.map(r => ({
+            let newMovements = rowsCont.map(r => ({
                 id: parseInt(r[0]) || Date.now(), date: r[1] || '', type: r[2] || '', amount: parseFloat(r[3]) || 0,
                 desc: r[4] || '', method: r[5] || '', affectProfit: r[6] === 'SÍ', historical: r[7] === 'SÍ', img: r[8] || ''
             }));
-            localStorage.setItem('copo_data', JSON.stringify(movements));
+            if (JSON.stringify(newMovements) !== JSON.stringify(movements)) {
+                movements = newMovements;
+                localStorage.setItem('copo_data', JSON.stringify(movements));
+                hasChanges = true;
+            }
         }
 
         // Bajar planillas de colaboradores
         let respPlan = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Planilla!A2:D10000" });
         let rowsPlan = respPlan.result.values;
         if (rowsPlan && rowsPlan.length > 0) {
-            staff = rowsPlan.map(r => ({
+            let newStaff = rowsPlan.map(r => ({
                 name: r[0] || '', rate: parseFloat(r[1]) || 0, debt: parseFloat(r[2]) || 0, shifts: r[3] ? JSON.parse(r[3]) : [],
                 isOpen: false, useExtras: true, activeIn: ""
             }));
-            localStorage.setItem('copo_staff', JSON.stringify(staff));
+            if (JSON.stringify(newStaff) !== JSON.stringify(staff)) {
+                staff = newStaff;
+                localStorage.setItem('copo_staff', JSON.stringify(staff));
+                hasChanges = true;
+            }
         }
 
         // Bajar marcas de identidad, variables de ganancia y tags
         let respConf = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Configuracion!A2:B15" });
         let rowsConf = respConf.result.values;
         if (rowsConf && rowsConf.length > 0) {
+            let oldBizName = bizData.name;
+            let oldBizOwner = bizData.owner;
+            let oldBizLogo = bizData.logo;
+            let oldLastResetDate = lastResetDate;
+            let oldVirtualProfitBase = virtualProfitBase;
+            let oldTags = JSON.stringify(savedTags);
+
             rowsConf.forEach(r => {
                 if (r[0] === 'biz_name') bizData.name = r[1];
                 if (r[0] === 'biz_owner') bizData.owner = r[1];
@@ -569,12 +586,21 @@ async function pullFromCloud() {
                 if (r[0] === 'virtual_profit') { virtualProfitBase = parseFloat(r[1]) || 0; localStorage.setItem('copo_virtual_profit', virtualProfitBase.toString()); }
                 if (r[0] === 'tags') { try { savedTags = JSON.parse(r[1]); localStorage.setItem('copo_tags', JSON.stringify(savedTags)); } catch(e){} }
             });
-            localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
-            applyBusinessIdentity();
-            if(document.getElementById('biz-name-input')) document.getElementById('biz-name-input').value = bizData.name;
-            if(document.getElementById('owner-name-input')) document.getElementById('owner-name-input').value = bizData.owner;
+
+            if (oldBizName !== bizData.name || oldBizOwner !== bizData.owner || oldBizLogo !== bizData.logo || oldLastResetDate !== lastResetDate || oldVirtualProfitBase !== virtualProfitBase || oldTags !== JSON.stringify(savedTags)) {
+                localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
+                applyBusinessIdentity();
+                if(document.getElementById('biz-name-input')) document.getElementById('biz-name-input').value = bizData.name;
+                if(document.getElementById('owner-name-input')) document.getElementById('owner-name-input').value = bizData.owner;
+                hasChanges = true;
+            }
         }
-        updateUI(); renderStaff();
+        
+        // El hilo visual solo se congela / refresca si hay cambios reales descargados
+        if (hasChanges) {
+            updateUI(); 
+            renderStaff();
+        }
     } catch (err) { console.error("Error descargando datos:", err); }
 }
 
@@ -680,12 +706,22 @@ function logout() {
     document.getElementById('pin').value = "";
 }
 
+// 🛠️ TRADUCTOR DE ENLACES DE GOOGLE DRIVE INTEGRADO (EVITA IMAGEN ROTA)
 function applyBusinessIdentity() {
     const loginArea = document.getElementById('login-logo-area');
     const headerArea = document.getElementById('header-logo-area');
-    let logoHtml = bizData.logo ? `<img src="${bizData.logo}" class="logo-img" onclick="zoomImage('${bizData.logo}')">` : `<span class="logo-small">${bizData.name}</span>`;
+    
+    let logoSrc = bizData.logo || "";
+    if (logoSrc && logoSrc.includes("drive.google.com")) {
+        let idMatch = logoSrc.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || logoSrc.match(/id=([a-zA-Z0-9_-]+)/);
+        if (idMatch && idMatch[1]) {
+            logoSrc = `https://docs.google.com/uc?export=download&id=${idMatch[1]}`;
+        }
+    }
+
+    let logoHtml = logoSrc ? `<img src="${logoSrc}" class="logo-img" onclick="zoomImage('${logoSrc}')">` : `<span class="logo-small">${bizData.name}</span>`;
     headerArea.innerHTML = `<div class="logo-container">${logoHtml}${bizData.owner ? `<span class="owner-text">${bizData.owner}</span>` : ""}</div>`;
-    loginArea.innerHTML = bizData.logo ? `<img src="${bizData.logo}" class="logo-login" onclick="zoomImage('${bizData.logo}')">` : `<div class="logo-small" style="margin-bottom:20px;">${bizData.name}</div>`;
+    loginArea.innerHTML = logoSrc ? `<img src="${logoSrc}" class="logo-login" onclick="zoomImage('${logoSrc}')">` : `<div class="logo-small" style="margin-bottom:20px;">${bizData.name}</div>`;
 }
 
 function updateBusinessLogo(input) { 
@@ -812,6 +848,7 @@ function setMainDateToNow() {
     if (dateInput) dateInput.value = localISO;
 }
 
+// ⚡ MOTOR DE PROCESAMIENTO OPTIMIZADO (REGLA DE LOS 50 MOVIMIENTOS E IN-MEMORY FILTERING)
 function updateUI() {
     const body = document.getElementById('history-body'); body.innerHTML = "";
     let tin = 0, tout = 0, mBank = 0, mCash = 0;
@@ -836,6 +873,7 @@ function updateUI() {
 
     let resetTimestamp = new Date(lastResetDate).getTime();
 
+    // El cálculo contable global siempre se mantiene íntegro sobre TODO el historial en memoria
     movements.forEach(m => {
         if (m.type === 'CREDIT_PENDING') return;
 
@@ -870,7 +908,12 @@ function updateUI() {
         }
     });
 
-    let visibleCounter = 0;
+    // Jalamos la palabra clave del input para el filtro reactivo en memoria
+    const buscadorInp = document.getElementById('buscador');
+    const v = buscadorInp ? buscadorInp.value.toLowerCase().trim() : "";
+    const esBusquedaElectronica = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
+
+    let renderedCount = 0;
     
     let displayMovements = [...movements];
     displayMovements.sort((x, y) => {
@@ -880,17 +923,38 @@ function updateUI() {
     });
 
     displayMovements.forEach(m => {
-        visibleCounter++;
         let isCap = m.type === 'CAP_BASE';
         let isCredit = m.type === 'CREDIT_PENDING';
         let isUsoExterno = m.type === 'ADJ_OUT';
-        let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
         
+        // Matcher avanzado de strings en memoria para no depender de leer el DOM
+        let buscaMetodo = m.method ? m.method.toLowerCase() : "";
+        let buscaDesc = m.desc ? m.desc.toLowerCase() : "";
+        let buscaTipoUsExt = isUsoExterno ? "uso externo gasto personal" : "";
+        let textLinea = `${buscaDesc} ${buscaMetodo} ${buscaTipoUsExt} ${m.type}`.toLowerCase();
+        
+        let match = false;
+        if (v === "") {
+            match = true;
+        } else if (esBusquedaElectronica) {
+            match = textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple");
+        } else {
+            match = textLinea.includes(v);
+        }
+
+        if (!match) return;
+
+        // Regla quirúrgica: Si no hay filtro, solo renderiza los últimos 50 en pantalla para máxima fluidez
+        if (v === "" && renderedCount >= 50) {
+            return;
+        }
+        renderedCount++;
+
+        let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
         let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') ? m.amount : -m.amount;
         
         let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : (isUsoExterno ? 'adj-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')))));
         
-        // INTERRUPTOR DE VISUALIZACIÓN DRIVE LINK VS BASE64 LOCAL
         let imgBtn = "";
         if (m.img) {
             if (m.img.startsWith("http")) {
@@ -921,7 +985,7 @@ function updateUI() {
         </tr>`;
     });
 
-    document.getElementById('mov-counter-val').innerText = visibleCounter;
+    document.getElementById('mov-counter-val').innerText = renderedCount;
 
     document.getElementById('val-bank').innerText = "₡" + formatVisual(mBank, 2);
     document.getElementById('val-cash').innerText = "₡" + formatVisual(mCash, 2);
@@ -1002,7 +1066,7 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "10.0", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
+        version: "10.1", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
@@ -1049,26 +1113,9 @@ function importDataBackup(input) {
     reader.readAsText(file);
 }
 
+// El filtrado simplemente gatilla el motor en memoria reduciendo latencia y redibujos innecesarios
 function filtrarMovimientos() {
-    const v = document.getElementById('buscador').value.toLowerCase().trim();
-    let countRows = 0;
-    
-    const esBusquedaElectronica = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
-    
-    Array.from(document.getElementById('history-body').rows).forEach(r => { 
-        let textLinea = r.innerText.toLowerCase();
-        let match = false;
-        
-        if (esBusquedaElectronica) {
-            match = textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple");
-        } else {
-            match = textLinea.includes(v);
-        }
-        
-        r.style.display = match ? "" : "none"; 
-        if(match) countRows++;
-    });
-    document.getElementById('mov-counter-val').innerText = countRows;
+    updateUI();
 }
 
 // MÓDULO PLANILLA
@@ -1535,7 +1582,7 @@ function processSecureSystemClear() {
         const dialogWrapper = document.getElementById('custom-dialog-wrapper');
         dialogWrapper.style.borderColor = "#ff3b3b";
         document.getElementById('dialog-title').innerText = "ERROR DE PIN";
-        document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operación fue denegada.";
+        document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operation fue denegada.";
         document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-out" style="width:100%; margin:0;" onclick="closeDialogResetStyles()">ENTENDIDO</button>`;
     }
 }
@@ -1562,6 +1609,7 @@ function toggleTagsDropdown(event) {
     }
 }
 
+// Vinculamos la barra buscadora de etiquetas para que sea reactiva en cascada
 function onDescTagInput(input) {
     if (input.value === "") {
         document.getElementById('tags-dropdown').style.display = 'none';

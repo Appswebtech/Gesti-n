@@ -34,7 +34,7 @@ header { border-bottom: 2px solid #0026ff; padding-bottom: 10px; margin-bottom: 
 .card h3 { margin: 0; font-size: 0.7rem; color: #888; text-transform: uppercase; }
 .card p { margin: 8px 0 0; font-size: 1.1rem; font-weight: bold; }
 
-.profit { color: #25D366; } .expense { color: #ff3b3b; } .adj-color { color: #0026ff; } .bank-color { color: #0026ff; } .cash-color { color: #25D366; }
+.profit { color: #25D366; } .expense { color: #ff3b3b; } .adj-color { color: #0026ff; } .bank-color { color: #0026ff; } .cash-color = { color: #25D366; }
 .aguinaldo-color { color: #ffcc00 !important; }
 .balance { grid-column: span 2; border: 1px solid #0026ff; background: rgba(0, 38, 255, 0.05); }
 .profit-card { grid-column: span 2; border: 1px solid #25D366; background: rgba(37, 211, 102, 0.05); }
@@ -1297,7 +1297,7 @@ function openStaffHistory(i) {
             if(sh.type === 'SHIFT') det = `${getFormatedTime(sh.ord)} ord ${sh.ext > 0 ? '+ ' + getFormatedTime(sh.ext) + ' ext' : ''}`;
             else if(sh.type === 'ADVANCE') det = `<i class="fas fa-handholding-usd"></i> ${sh.desc || "Adelanto"}`;
             else if(sh.type === 'AGUINALDO') { det = `<i class="fas fa-piggy-bank"></i> ${sh.desc}`; colorClass = 'aguinaldo-color'; }
-            else if(sh.type === 'PAYMENT_SUELDO' orient = ) { det = `<i class="fas fa-check"></i> ${sh.desc}`; colorClass = 'adj-color'; }
+            else if(sh.type === 'PAYMENT_SUELDO') { det = `<i class="fas fa-check"></i> ${sh.desc}`; colorClass = 'adj-color'; }
             else if(sh.type === 'PAYMENT_AGUINALDO') { det = `<i class="fas fa-gift"></i> Pago Aguinaldo`; colorClass = 'aguinaldo-color'; }
             
             let imgBtn = "";
@@ -1386,7 +1386,7 @@ function resetDebt(i) {
             type: 'PAYMENT_SUELDO', 
             desc: detail, 
             img: "", 
-            metaDesglose: { horasOrd: tOrd, hoursExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } 
+            metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } 
         }); 
         staff[i].debt -= sueldoPuro; 
         saveStaff(); 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 9.7 - Edición Nube</title>
+<title>Gestión Total 9.8 - Edición Nube</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -119,7 +119,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 9.7 (NUBE)</div>
+    <div class="version-tag">VERSIÓN 9.8 (NUBE)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -299,10 +299,11 @@ input:checked + .slider:before { transform: translateX(20px); }
                 </div>
                 <p id="user-logged-email" style="font-size: 0.8rem; color: #25D366; display: none; margin-bottom: 10px; font-weight: bold;"></p>
                 <button id="btn-connect-google" class="btn btn-cap" style="background: #4285F4; color: white; margin: 0;" onclick="handleAuthClick()"><i class="fas fa-link" style="margin-right: 8px;"></i> Conectar con Google</button>
+                <button id="btn-sync-now" class="btn btn-in" style="background: #25D366; color: black; margin-top: 12px; display: none;" onclick="forceManualSync()"><i class="fas fa-sync-alt" style="margin-right: 8px;"></i> Sincronizar Todo Ahora</button>
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.7 (NUBE)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 9.8 (NUBE)</div>
 </div>
 
 <div id="help-card">
@@ -347,6 +348,7 @@ const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets https://www.
 let tokenClient;
 let gapiInited = false;
 let gisnited = false;
+let spreadsheetId = localStorage.getItem('copo_spreadsheet_id') || null;
 
 // VARIABLES DE ESTADO LOCAL DE LA APP
 let secure_pin_hash = localStorage.getItem('copo_pin_hash') || "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
@@ -404,6 +406,11 @@ function gapiLoad() { gapi.load('client', initializeGapiClient); }
 async function initializeGapiClient() {
     await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: GOOGLE_DISCOVERY_DOCS });
     gapiInited = true;
+    if (gapi.client.getToken() !== null) {
+        document.getElementById('btn-sync-now').style.display = "block";
+        document.getElementById('cloud-status').innerText = "Conectado";
+        document.getElementById('cloud-status').className = "status-badge status-connected";
+    }
 }
 function gisInit() {
     tokenClient = google.accounts.oauth2.initTokenClient({
@@ -411,15 +418,120 @@ function gisInit() {
     });
     gisInited = true;
 }
+
 function handleAuthClick() {
     tokenClient.callback = async (resp) => {
         if (resp.error !== undefined) { throw (resp); }
         document.getElementById('cloud-status').innerText = "Conectado";
         document.getElementById('cloud-status').className = "status-badge status-connected";
-        showMsg("¡Enlazado con éxito a Google Cloud! Listo para subir datos.");
+        document.getElementById('btn-sync-now').style.display = "block";
+        showMsg("¡Enlazado con éxito a Google Cloud! Iniciando primera sincronización...");
+        await syncToCloud();
     };
     if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } 
     else { tokenClient.requestAccessToken({prompt: ''}); }
+}
+
+// MOTOR MAESTRO DE CAMIONES DE SINCRO (GOOGLE SHEETS)
+async function checkAndCreateSpreadsheet() {
+    if (spreadsheetId) return spreadsheetId;
+    try {
+        let response = await gapi.client.drive.files.list({
+            q: "name = 'Gestión Total - Base de Datos' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false",
+            fields: "files(id, name)"
+        });
+        let files = response.result.files;
+        if (files && files.length > 0) {
+            spreadsheetId = files[0].id;
+            localStorage.setItem('copo_spreadsheet_id', spreadsheetId);
+            return spreadsheetId;
+        } else {
+            let createResp = await gapi.client.sheets.spreadsheets.create({
+                resource: {
+                    properties: { title: "Gestión Total - Base de Datos" },
+                    sheets: [
+                        { properties: { title: "Contabilidad" } },
+                        { properties: { title: "Planilla" } }
+                    ]
+                }
+            });
+            spreadsheetId = createResp.result.spreadsheetId;
+            localStorage.setItem('copo_spreadsheet_id', spreadsheetId);
+            return spreadsheetId;
+        }
+    } catch (err) {
+        console.error("Error buscando o levantando la base en la nube:", err);
+        return null;
+    }
+}
+
+async function syncToCloud() {
+    if (!gapiInited || !gapi.client.getToken()) return;
+    const statusBadge = document.getElementById('cloud-status');
+    if (statusBadge) {
+        statusBadge.innerText = "Sincronizando...";
+        statusBadge.className = "status-badge";
+        statusBadge.style.backgroundColor = "#ffcc00";
+        statusBadge.style.color = "black";
+    }
+    try {
+        let id = await checkAndCreateSpreadsheet();
+        if (!id) throw new Error("No hay ID disponible");
+
+        let contabilidadRows = [['ID', 'Fecha y Hora', 'Tipo', 'Monto', 'Detalle', 'Método / Cuenta', 'Afecta Flujo', 'Histórico']];
+        movements.forEach(m => {
+            contabilidadRows.push([
+                m.id || '',
+                m.date || '',
+                m.type || '',
+                m.amount || 0,
+                m.desc || '',
+                m.method || '',
+                m.affectProfit ? 'SÍ' : 'NO',
+                m.historical ? 'SÍ' : 'NO'
+            ]);
+        });
+
+        let planillaRows = [['Nombre Empleado', 'Tarifa por Hora', 'Saldo Pendiente (Sueldo)', 'Historial Completo (JSON)']];
+        staff.forEach(s => {
+            planillaRows.push([
+                s.name || '',
+                s.rate || 0,
+                s.debt || 0,
+                JSON.stringify(s.shifts || [])
+            ]);
+        });
+
+        await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: id, range: "Contabilidad!A1:Z10000" });
+        await gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: id, range: "Contabilidad!A1", valueInputOption: "USER_ENTERED", resource: { values: contabilidadRows }
+        });
+
+        await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: id, range: "Planilla!A1:Z10000" });
+        await gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: id, range: "Planilla!A1", valueInputOption: "USER_ENTERED", resource: { values: planillaRows }
+        });
+
+        if (statusBadge) {
+            statusBadge.innerText = "Sincronizado";
+            statusBadge.className = "status-badge status-connected";
+            statusBadge.style.backgroundColor = "";
+            statusBadge.style.color = "";
+        }
+    } catch (err) {
+        console.error("Error en el flete de datos:", err);
+        if (statusBadge) {
+            statusBadge.innerText = "Error Sinc.";
+            statusBadge.className = "status-badge status-disconnected";
+            statusBadge.style.backgroundColor = "";
+            statusBadge.style.color = "";
+        }
+    }
+}
+
+async function forceManualSync() {
+    await syncToCloud();
+    showMsg("¡Sincronización forzada completada con éxito en Google Sheets!");
 }
 
 let manualTimer;
@@ -444,7 +556,6 @@ function initManual() {
     document.addEventListener('touchend', handleCancel);
 }
 
-// LOGOUT MANUAL RECONSTRUIDO
 function logout() {
     document.getElementById('admin-panel').style.display = 'none';
     document.getElementById('login-screen').style.display = 'block';
@@ -686,6 +797,7 @@ function releaseCreditToCashflow(methodSelected) {
         localStorage.setItem('copo_data', JSON.stringify(movements));
         closeModal('credit-release-modal');
         updateUI();
+        syncToCloud();
         showMsg("¡Crédito cobrado con éxito! Fondos agregados al flujo activo.");
     }
     selectedCreditId = null;
@@ -710,10 +822,10 @@ function processTableFile(input) {
             if (targetStaffIdx !== null) {
                 const sIdx = targetUploadContext.staffIdx;
                 const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === targetMoveId);
-                if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = dataUrl; saveStaff(); closeModal('history-modal'); openStaffHistory(sIdx); }
+                if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = dataUrl; saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(sIdx); syncToCloud(); }
             } else {
                 const mIdx = movements.findIndex(m => m.id === targetMoveId);
-                if (mIdx !== -1) { movements[mIdx].img = dataUrl; localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); }
+                if (mIdx !== -1) { movements[mIdx].img = dataUrl; localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); syncToCloud(); }
             }
         };
     }
@@ -723,7 +835,7 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "9.7", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
+        version: "9.8", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
@@ -762,7 +874,7 @@ function importDataBackup(input) {
                 if(bizData.name) document.getElementById('biz-name-input').value = bizData.name;
                 if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner;
                 
-                applyBusinessIdentity(); userInterruptedClock = false; setMainDateToNow(); updateUI(); renderStaff(); showMsg("¡Restauración Completa!");
+                applyBusinessIdentity(); userInterruptedClock = false; setMainDateToNow(); updateUI(); renderStaff(); syncToCloud(); showMsg("¡Restauración Completa!");
             });
         } catch (err) { showMsg("Error crítico al procesar el archivo."); }
         input.value = "";
@@ -931,10 +1043,10 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
     htmlContent += `</div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal'); openStaffHistory(${staffIdx});">VOLVER</button>`; openModal(tituloHtml, htmlContent);
 }
 
-function deleteStaffMovement(staffIndex, moveId) { showConfirm("¿Eliminar este registro?", () => { const move = staff[staffIndex].shifts.find(sh => sh.id === moveId); if (move) { staff[staffIndex].debt -= move.earned; staff[staffIndex].shifts = staff[staffIndex].shifts.filter(sh => sh.id !== moveId); saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(staffIndex); } }); }
-function addHours(i) { const s = staff[i], inV = document.getElementById(`dt-in-${i}`).value, outV = document.getElementById(`dt-out-${i}`).value; if(!inV || !outV) return showMsg("Faltan horas"); const diff = (new Date(outV) - new Date(inV)) / 3600000; if(diff <= 0) return showMsg("Error"); let ord = (s.useExtras && diff > 8) ? 8 : diff, ext = (s.useExtras && diff > 8) ? diff - 8 : 0, earned = (ord * s.rate) + (ext * s.rate * 1.5); s.debt += earned; if(!s.shifts) s.shifts = []; s.shifts.unshift({ id: Date.now(), date: new Date().toISOString(), ord, ext, earned, type: 'SHIFT', img: "" }); s.activeIn = ""; saveStaff(); renderStaff(); document.getElementById(`dt-out-${i}`).value = ""; }
+function deleteStaffMovement(staffIndex, moveId) { showConfirm("¿Eliminar este registro?", () => { const move = staff[staffIndex].shifts.find(sh => sh.id === moveId); if (move) { staff[staffIndex].debt -= move.earned; staff[staffIndex].shifts = staff[staffIndex].shifts.filter(sh => sh.id !== moveId); saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(staffIndex); syncToCloud(); } }); }
+function addHours(i) { const s = staff[i], inV = document.getElementById(`dt-in-${i}`).value, outV = document.getElementById(`dt-out-${i}`).value; if(!inV || !outV) return showMsg("Faltan horas"); const diff = (new Date(outV) - new Date(inV)) / 3600000; if(diff <= 0) return showMsg("Error"); let ord = (s.useExtras && diff > 8) ? 8 : diff, ext = (s.useExtras && diff > 8) ? diff - 8 : 0, earned = (ord * s.rate) + (ext * s.rate * 1.5); s.debt += earned; if(!s.shifts) s.shifts = []; s.shifts.unshift({ id: Date.now(), date: new Date().toISOString(), ord, ext, earned, type: 'SHIFT', img: "" }); s.activeIn = ""; saveStaff(); renderStaff(); document.getElementById(`dt-out-${i}`).value = ""; syncToCloud(); }
 
-function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) status.shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById('adv-desc-' + i).value = ""; }
+function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) status.shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById('adv-desc-' + i).value = ""; syncToCloud(); }
 
 /* CIRUGÍA DE PRECISIÓN APLICADA EN RESETDEBT: FILTRADO EXACTO POR LATESTPAYMENTID */
 function resetDebt(i) { 
@@ -981,10 +1093,11 @@ function resetDebt(i) {
         staff[i].debt -= sueldoPuro; 
         saveStaff(); 
         renderStaff(); 
+        syncToCloud();
     }); 
 }
 
-function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose); let metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : null; if(metaCopia) { if(metaCopia.textHorasOrd !== undefined && metaCopia.horasOrd === undefined) metaCopia.horasOrd = metaCopia.textHorasOrd; if(metaCopia.textHorasExt !== undefined && metaCopia.horasExt === undefined) metaCopia.horasExt = metaCopia.textHorasExt; } else { metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: 8.33 }; } showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); }); }
+function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose); let metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : null; if(metaCopia) { if(metaCopia.textHorasOrd !== undefined && metaCopia.horasOrd === undefined) metaCopia.horasOrd = metaCopia.textHorasOrd; if(metaCopia.textHorasExt !== undefined && metaCopia.horasExt === undefined) metaCopia.horasExt = metaCopia.textHorasExt; } else { metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: 8.33 }; } showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); syncToCloud(); }); }
 
 function openAguinaldoCalc(i) { 
     openModal("Aguinaldo", `
@@ -1051,12 +1164,13 @@ function addAguinaldoToStaff(i, monto, f, t, tOrd, tExt, totalS, percent) {
     saveStaff(); 
     renderStaff(); 
     closeModal('history-modal'); 
+    syncToCloud();
 }
 
 function updateStaffRate(i) { openModal("Ajustar Tarifa", `<div style="text-align:center;"><p>Nueva tarifa por hora para <b>${staff[i].name}</b></p><input type="text" id="new-rate-val" placeholder="₡ Tarifa" oninput="formatCurrencyInput(this)" inputmode="decimal"><button class="btn btn-in" onclick="saveNewRate(${i})">GUARDAR TARIFA</button></div>`); }
-function saveNewRate(i) { const val = cleanAmount(document.getElementById('new-rate-val').value); if(val > 0) { staff[i].rate = val; saveStaff(); renderStaff(); closeModal('history-modal'); showMsg("Tarifa actualizada."); } }
-function addStaff() { const n = document.getElementById('staff-name').value, r = cleanAmount(document.getElementById('staff-rate').value); if(!n || !r) return; staff.unshift({ name: n, rate: r, debt: 0, shifts: [], useExtras: true, activeIn: "", isOpen: true }); saveStaff(); renderStaff(); document.getElementById('staff-name').value = ""; document.getElementById('staff-rate').value = ""; }
-function deleteStaff(i) { showConfirm(`¿Deseas eliminar permanentemente a <b>${staff[i].name}</b> de la planilla?`, () => { staff.splice(i, 1); saveStaff(); renderStaff(); }); }
+function saveNewRate(i) { const val = cleanAmount(document.getElementById('new-rate-val').value); if(val > 0) { staff[i].rate = val; saveStaff(); renderStaff(); closeModal('history-modal'); showMsg("Tarifa actualizada."); syncToCloud(); } }
+function addStaff() { const n = document.getElementById('staff-name').value, r = cleanAmount(document.getElementById('staff-rate').value); if(!n || !r) return; staff.unshift({ name: n, rate: r, debt: 0, shifts: [], useExtras: true, activeIn: "", isOpen: true }); saveStaff(); renderStaff(); document.getElementById('staff-name').value = ""; document.getElementById('staff-rate').value = ""; syncToCloud(); }
+function deleteStaff(i) { showConfirm(`¿Deseas eliminar permanentemente a <b>${staff[i].name}</b> de la planilla?`, () => { staff.splice(i, 1); saveStaff(); renderStaff(); syncToCloud(); }); }
 
 function checkPeriodStaff(i) {
     openModal(`Consultar Periodo: ${staff[i].name}`, `<div class="form-box" style="background:transparent; border:none; padding:0;">
@@ -1372,10 +1486,10 @@ function deleteCurrentZoomedImage() {
     showConfirm("¿Deseas eliminar la foto de este registro permanentemente?", () => {
         if (currentZoomedStaffIdx !== null) {
             const sIdx = currentZoomedStaffIdx; const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === currentZoomedId);
-            if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = ""; saveStaff(); renderStaff(); }
+            if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = ""; saveStaff(); renderStaff(); syncToCloud(); }
         } else {
             const mIdx = movements.findIndex(m => m.id === currentZoomedId);
-            if (mIdx !== -1) { movements[mIdx].img = ""; localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); }
+            if (mIdx !== -1) { movements[mIdx].img = ""; localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); syncToCloud(); }
         }
         closeModal('imgModal'); closeModal('history-modal'); showMsg("Foto de registro eliminada."); currentZoomedId = null; currentZoomedStaffIdx = null;
     });
@@ -1410,7 +1524,7 @@ function openTrashModal() {
 
 function restoreMovement(id) {
     const idx = trashMovements.findIndex(m => m.id === id);
-    if (idx !== -1) { const item = trashMovements.splice(idx, 1)[0]; movements.unshift(item); localStorage.setItem('copo_data', JSON.stringify(movements)); localStorage.setItem('copo_trash', JSON.stringify(trashMovements)); updateUI(); closeModal('history-modal'); }
+    if (idx !== -1) { const item = trashMovements.splice(idx, 1)[0]; movements.unshift(item); localStorage.setItem('copo_data', JSON.stringify(movements)); localStorage.setItem('copo_trash', JSON.stringify(trashMovements)); updateUI(); closeModal('history-modal'); syncToCloud(); }
 }
 function permanentlyDeleteMovement(id) { showConfirm("¿Deseas eliminar permanentemente este registro?", () => { trashMovements = trashMovements.filter(m => m.id !== id); localStorage.setItem('copo_trash', JSON.stringify(trashMovements)); closeModal('history-modal'); }); }
 
@@ -1428,6 +1542,7 @@ function deleteMovement(id) {
             localStorage.setItem('copo_data', JSON.stringify(movements));
             localStorage.setItem('copo_trash', JSON.stringify(trashMovements));
             updateUI(); 
+            syncToCloud();
         }
     }); 
 }
@@ -1488,7 +1603,7 @@ function saveEditMovement(id) {
         if (wasHistorical && wasAffectProfit) { movements[mIdx].id = Date.now(); }
 
         if (origType !== 'CAP_BASE') { movements[mIdx].date = new Date(document.getElementById('edit-date').value).toISOString(); }
-        localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeModal('history-modal'); showMsg("Cambios aplicados."); 
+        localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeModal('history-modal'); syncToCloud(); showMsg("Cambios aplicados."); 
     }
 }
 
@@ -1666,6 +1781,7 @@ function executeEntry(m, ot = null) {
     
     userInterruptedClock = false; 
     setMainDateToNow(); 
+    syncToCloud();
 }
 </script>
 </body>

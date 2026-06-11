@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 10.4 - Edición Nube Unificada</title>
+<title>Gestión Total 10.5 - Edición Nube Unificada</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -118,7 +118,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 10.4 (SINCRO REALTIME)</div>
+    <div class="version-tag">VERSIÓN 10.5 (SINCRO REALTIME)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -308,7 +308,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.4 (SINCRO REALTIME)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.5 (SINCRO REALTIME)</div>
 </div>
 
 <div id="help-card">
@@ -370,7 +370,7 @@ let virtualProfitBase = parseFloat(localStorage.getItem('copo_virtual_profit')) 
 let lastResetDate = localStorage.getItem('copo_last_reset') || new Date(0).toISOString();
 let bizData = JSON.parse(localStorage.getItem('copo_biz_data')) || { name: "Gestión Total", owner: "", logo: "" };
 
-// VARIABLE DE CONTROL DE PAGINACIÓN CRONOLÓGICA (10.4)
+// VARIABLE DE CONTROL DE PAGINACIÓN CRONOLÓGICA
 window.maxVisibleMovements = 50;
 
 // INYECCIÓN DE SISTEMA DE ETIQUETAS INDEPENDIENTES EN STORAGE
@@ -385,7 +385,7 @@ let pendingType = 'IN';
 let userInterruptedClock = false;
 window.isBackgroundSyncInProgress = false;
 
-// VARIABLES Y LOGICA DEL INTERRUPTOR MAESTRO DE NUBE (10.4)
+// VARIABLES Y LOGICA DEL INTERRUPTOR MAESTRO DE NUBE
 window.syncOverride = localStorage.getItem('copo_sync_override') === 'true';
 
 function updateSyncToggleUI() {
@@ -466,7 +466,7 @@ window.onload = function() {
 
 function gapiLoad() { gapi.load('client', initializeGapiClient); }
 
-// 💾 PERSISTENCIA DE CONEXIÓN MULTI-DISPOSITIVO ENTRE REFRESCAMIENTOS (10.4)
+// 💾 PERSISTENCIA DE CONEXIÓN MULTI-DISPOSITIVO ENTRE REFRESCAMIENTOS
 async function initializeGapiClient() {
     await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: GOOGLE_DISCOVERY_DOCS });
     gapiInited = true;
@@ -497,7 +497,7 @@ function handleAuthClick() {
     tokenClient.callback = async (resp) => {
         if (resp.error !== undefined) { throw (resp); }
         
-        // Guardar token en localstorage para persistir sesión activa en reloads (10.4)
+        // Guardar token en localstorage para persistir sesión activa en reloads
         localStorage.setItem('google_access_token', resp.access_token);
         
         document.getElementById('cloud-status').innerText = "Conectado";
@@ -521,6 +521,26 @@ function handleAuthClick() {
     };
     if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } 
     else { tokenClient.requestAccessToken({prompt: ''}); }
+}
+
+// REFRESCAMIENTO SILENCIOSO DE TOKENS GOOGLE (ANTI-CONGELAMIENTOS 401)
+async function refreshGoogleTokenSilently() {
+    return new Promise((resolve) => {
+        if (!tokenClient) return resolve(false);
+        tokenClient.callback = (resp) => {
+            if (resp.error !== undefined) {
+                console.error("Fallo en refresco silencioso de token:", resp);
+                resolve(false);
+            } else {
+                localStorage.setItem('google_access_token', resp.access_token);
+                gapi.client.setToken({ access_token: resp.access_token });
+                const st = document.getElementById('cloud-status');
+                if (st) { st.innerText = "Conectado"; st.className = "status-badge status-connected"; }
+                resolve(true);
+            }
+        };
+        tokenClient.requestAccessToken({ prompt: 'none' });
+    });
 }
 
 // MOTOR MAESTRO DE CAMIONES DE SINCRO (GOOGLE SHEETS)
@@ -589,8 +609,8 @@ async function uploadImageToDrive(base64DataUrl, fileName) {
     }
 }
 
-// 📥 DESCARGAR BASE DE DATOS CON FUSIÓN INTELIGENTE POR TIMESTAMPS ANTI-APLANADORA Y GUARDIA DE LOGO (10.4)
-async function pullFromCloud() {
+// 📥 DESCARGAR BASE DE DATOS CON FUSIÓN INTELIGENTE POR ESTADOS ANTI-APLANADORA Y PRESERVACIÓN DE UI (10.5)
+async function pullFromCloud(isRetry = false) {
     if (!gapiInited || !gapi.client.getToken()) return;
     try {
         let id = await checkAndCreateSpreadsheet();
@@ -598,35 +618,52 @@ async function pullFromCloud() {
         
         let hasChanges = false;
         
-        // 1. Descarga y Fusión Inteligente de Movimientos Contables (Merge controlado con Timestamps de Eliminación Cruzada)
-        let respCont = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Contabilidad!A2:I10000" });
+        // 1. Descarga y Fusión Inteligente de Movimientos Contables por Estado Real (Columna J)
+        let respCont = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Contabilidad!A2:J10000" });
         let rowsCont = respCont.result.values;
         if (rowsCont && rowsCont.length > 0) {
-            let cloudMovements = rowsCont.map(r => ({
-                id: parseInt(r[0]) || Date.now(), date: r[1] || '', type: r[2] || '', amount: parseFloat(r[3]) || 0,
-                desc: r[4] || '', method: r[5] || '', affectProfit: r[6] === 'SÍ', historical: r[7] === 'SÍ', img: r[8] || ''
-            }));
-            
-            let lastPullTime = parseInt(localStorage.getItem('copo_last_cloud_pull')) || 0;
-            let cloudIds = new Set(cloudMovements.map(m => m.id));
-            let trashIds = new Set(trashMovements.map(t => t.id));
-            
-            // Movimientos genuinos offline creados localmente después de la última sincronización
-            let localOnlyMovements = movements.filter(m => !cloudIds.has(m.id) && m.id > lastPullTime);
-            
-            // Movimientos que existían antes y ya no están en la nube (fueron borrados desde otro dispositivo)
-            let deletedByOtherDevice = movements.filter(m => !cloudIds.has(m.id) && m.id <= lastPullTime);
-            deletedByOtherDevice.forEach(dm => {
-                if (!trashIds.has(dm.id)) {
-                    trashMovements.unshift(dm);
+            let cloudMovements = [];
+            let cloudTrashIds = new Set();
+            let cloudTrashMovements = [];
+
+            rowsCont.forEach(r => {
+                let mId = parseInt(r[0]) || Date.now();
+                let status = r[9] || 'ACTIVO';
+                let item = {
+                    id: mId, date: r[1] || '', type: r[2] || '', amount: parseFloat(r[3]) || 0,
+                    desc: r[4] || '', method: r[5] || '', affectProfit: r[6] === 'SÍ', historical: r[7] === 'SÍ', img: r[8] || ''
+                };
+                if (status === 'ELIMINADO') {
+                    cloudTrashIds.add(mId);
+                    cloudTrashMovements.push(item);
+                } else {
+                    cloudMovements.push(item);
                 }
             });
-            if (deletedByOtherDevice.length > 0) {
-                localStorage.setItem('copo_trash', JSON.stringify(trashMovements));
-            }
+
+            // Sincronizar movimientos de papelera de reciclaje local
+            let localTrashIds = new Set(trashMovements.map(t => t.id));
+            cloudTrashMovements.forEach(tm => {
+                if (!localTrashIds.has(tm.id)) {
+                    trashMovements.unshift(tm);
+                    localTrashIds.add(tm.id);
+                }
+            });
+            localStorage.setItem('copo_trash', JSON.stringify(trashMovements));
+
+            // Eliminar de movimientos locales los que estén marcados eliminados en la nube
+            movements = movements.filter(m => !cloudTrashIds.has(m.id));
+
+            let allCloudIds = new Set([...cloudMovements.map(m => m.id), ...cloudTrashIds]);
+            let localOnlyMovements = movements.filter(m => !allCloudIds.has(m.id));
+            let mergedMovements = [...localOnlyMovements, ...cloudMovements];
             
-            let mergedMovements = [...localOnlyMovements, ...cloudMovements.filter(m => !trashIds.has(m.id))];
-            
+            mergedMovements.sort((x, y) => {
+                let diff = new Date(x.date) - new Date(y.date);
+                if (diff === 0) return x.id - y.id; 
+                return diff;
+            });
+
             if (JSON.stringify(mergedMovements) !== JSON.stringify(movements)) {
                 movements = mergedMovements;
                 localStorage.setItem('copo_data', JSON.stringify(movements));
@@ -637,14 +674,23 @@ async function pullFromCloud() {
             }
         }
 
-        // 2. Descarga y Fusión Inteligente de Planillas de Colaboradores
+        // 2. Descarga y Fusión de Planillas de Colaboradores (Preservando Estados Locales Activos de UI)
         let respPlan = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Planilla!A2:D10000" });
         let rowsPlan = respPlan.result.values;
         if (rowsPlan && rowsPlan.length > 0) {
-            let cloudStaff = rowsPlan.map(r => ({
-                name: r[0] || '', rate: parseFloat(r[1]) || 0, debt: parseFloat(r[2]) || 0, shifts: r[3] ? JSON.parse(r[3]) : [],
-                isOpen: false, useExtras: true, activeIn: ""
-            }));
+            let cloudStaff = rowsPlan.map(r => {
+                let name = r[0] || '';
+                let localMatch = staff.find(s => s.name.toLowerCase().trim() === name.toLowerCase().trim());
+                return {
+                    name: name,
+                    rate: parseFloat(r[1]) || 0,
+                    debt: parseFloat(r[2]) || 0,
+                    shifts: r[3] ? JSON.parse(r[3]) : [],
+                    isOpen: localMatch ? localMatch.isOpen : false,
+                    useExtras: localMatch ? (localMatch.useExtras !== undefined ? localMatch.useExtras : true) : true,
+                    activeIn: localMatch ? localMatch.activeIn : ""
+                };
+            });
             
             let mergedStaff = [...cloudStaff];
             staff.forEach(localEmp => {
@@ -668,7 +714,7 @@ async function pullFromCloud() {
             }
         }
 
-        // 3. Descarga de Marcas de Identidad con Guardia Estricta de Logo local en Base64
+        // 3. Descarga de Identidad con Guardia de Enlaces de Logo y Fusión de Etiquetas Independientes
         let respConf = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Configuracion!A2:B15" });
         let rowsConf = respConf.result.values;
         if (rowsConf && rowsConf.length > 0) {
@@ -683,16 +729,29 @@ async function pullFromCloud() {
                 if (r[0] === 'biz_name' && !window.isBackgroundSyncInProgress) bizData.name = r[1];
                 if (r[0] === 'biz_owner' && !window.isBackgroundSyncInProgress) bizData.owner = r[1];
                 
-                // Guardia Estricta de Logo: Bloquea la sobreescritura si el logo local es una imagen rica Base64
                 if (r[0] === 'biz_logo' && !window.isBackgroundSyncInProgress) {
-                    if (!bizData.logo || !bizData.logo.startsWith('data:')) {
-                        if (r[1]) bizData.logo = r[1];
+                    if (r[1] && r[1].startsWith('http')) {
+                        bizData.logo = r[1]; // Preferir siempre links de nube limpios sobre Base64 local
+                    } else if (!bizData.logo && r[1]) {
+                        bizData.logo = r[1];
                     }
                 }
                 
                 if (r[0] === 'last_reset') { lastResetDate = r[1]; localStorage.setItem('copo_last_reset', lastResetDate); }
                 if (r[0] === 'virtual_profit') { virtualProfitBase = parseFloat(r[1]) || 0; localStorage.setItem('copo_virtual_profit', virtualProfitBase.toString()); }
-                if (r[0] === 'tags') { try { savedTags = JSON.parse(r[1]); localStorage.setItem('copo_tags', JSON.stringify(savedTags)); } catch(e){} }
+                if (r[0] === 'tags') { 
+                    try { 
+                        let cloudTags = JSON.parse(r[1]); 
+                        let unified = [...savedTags];
+                        cloudTags.forEach(ct => {
+                            if (!unified.some(t => t.toLowerCase().trim() === ct.toLowerCase().trim())) {
+                                unified.push(ct);
+                            }
+                        });
+                        savedTags = unified;
+                        localStorage.setItem('copo_tags', JSON.stringify(savedTags)); 
+                    } catch(e){} 
+                }
                 if (r[0] === 'copo_pin_hash') { secure_pin_hash = r[1]; localStorage.setItem('copo_pin_hash', secure_pin_hash); }
                 if (r[0] === 'copo_raw_pin') { localStorage.setItem('copo_raw_pin', r[1]); }
             });
@@ -706,18 +765,25 @@ async function pullFromCloud() {
             }
         }
         
-        // Registrar timestamp de sincronización exitosa de bajada
         localStorage.setItem('copo_last_cloud_pull', Date.now().toString());
 
         if (hasChanges) {
             updateUI(); 
             renderStaff();
         }
-    } catch (err) { console.error("Error descargando datos:", err); }
+    } catch (err) { 
+        console.error("Error descargando datos:", err); 
+        let is401 = err.status === 401 || (err.result && err.result.error && err.result.error.code === 401);
+        if (is401 && !isRetry) {
+            console.log("Token vencido en pull. Intentando refresh silencioso...");
+            let refreshed = await refreshGoogleTokenSilently();
+            if (refreshed) return await pullFromCloud(true);
+        }
+    }
 }
 
-// 📤 SUBIR TODA LA BASE LOCAL A LA NUBE (CON RESPALDO INTEGRAL DE CREDENCIALES PIN)
-async function syncToCloud() {
+// 📤 SUBIR TODA LA BASE LOCAL A LA NUBE (CON RESPALDO INTEGRAL DE CREDENCIALES PIN Y ESTADOS)
+async function syncToCloud(isRetry = false) {
     if (!gapiInited || !gapi.client.getToken() || window.syncOverride) return;
     const statusBadge = document.getElementById('cloud-status');
     if (statusBadge && !window.isBackgroundSyncInProgress) {
@@ -730,10 +796,15 @@ async function syncToCloud() {
         let id = await checkAndCreateSpreadsheet();
         if (!id) throw new Error("No hay ID disponible");
 
-        let contabilidadRows = [['ID', 'Fecha y Hora', 'Tipo', 'Monto', 'Detalle', 'Método / Cuenta', 'Afecta Flujo', 'Histórico', 'Imagen URL']];
+        let contabilidadRows = [['ID', 'Fecha y Hora', 'Tipo', 'Monto', 'Detalle', 'Método / Cuenta', 'Afecta Flujo', 'Histórico', 'Imagen URL', 'Estado']];
         movements.forEach(m => {
             contabilidadRows.push([
-                m.id || '', m.date || '', m.type || '', m.amount || 0, m.desc || '', m.method || '', m.affectProfit ? 'SÍ' : 'NO', m.historical ? 'SÍ' : 'NO', m.img || ''
+                m.id || '', m.date || '', m.type || '', m.amount || 0, m.desc || '', m.method || '', m.affectProfit ? 'SÍ' : 'NO', m.historical ? 'SÍ' : 'NO', m.img || '', 'ACTIVO'
+            ]);
+        });
+        trashMovements.forEach(tm => {
+            contabilidadRows.push([
+                tm.id || '', tm.date || '', tm.type || '', tm.amount || 0, tm.desc || '', tm.method || '', tm.affectProfit ? 'SÍ' : 'NO', tm.historical ? 'SÍ' : 'NO', tm.img || '', 'ELIMINADO'
             ]);
         });
 
@@ -778,6 +849,12 @@ async function syncToCloud() {
         }
     } catch (err) {
         console.error("Error en el flete de datos:", err);
+        let is401 = err.status === 401 || (err.result && err.result.error && err.result.error.code === 401);
+        if (is401 && !isRetry) {
+            console.log("Token vencido en sync. Intentando refresh silencioso...");
+            let refreshed = await refreshGoogleTokenSilently();
+            if (refreshed) return await syncToCloud(true);
+        }
         if (statusBadge && !window.isBackgroundSyncInProgress) {
             statusBadge.innerText = "Error Sinc.";
             statusBadge.className = "status-badge status-disconnected";
@@ -820,7 +897,6 @@ function logout() {
     document.getElementById('pin').value = "";
 }
 
-// 🛠️ TRADUCTOR DE ETIQUETAS DE IMAGEN EN LA NUBE INTEGRADO
 function applyBusinessIdentity() {
     const loginArea = document.getElementById('login-logo-area');
     const headerArea = document.getElementById('header-logo-area');
@@ -845,19 +921,28 @@ function updateBusinessLogo(input) {
         reader.readAsDataURL(file);
         reader.onload = async (e) => {
             let dataUrl = e.target.result;
+            
+            // Mostrar previsualización local inmediata
             bizData.logo = dataUrl;
-            localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
             applyBusinessIdentity();
             
             if (gapiInited && gapi.client.getToken()) {
+                const statusBadge = document.getElementById('cloud-status');
+                if (statusBadge) statusBadge.innerText = "Subiendo logo...";
                 const cloudUrl = await uploadImageToDrive(dataUrl, `Logo_Perfil_GestionTotal_${Date.now()}_${file.name}`);
                 if (cloudUrl) {
                     bizData.logo = cloudUrl;
                     localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
                     applyBusinessIdentity();
+                    showMsg("Foto de perfil subida a Drive y vinculada con éxito.");
+                } else {
+                    showMsg("No se pudo subir la imagen a Drive. Se mantendrá localmente de forma temporal.");
                 }
+            } else {
+                localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
+                showMsg("Logo guardado localmente. Conéctese a Google para sincronizarlo con otros dispositivos.");
             }
-            syncToCloud();
+            await syncToCloud();
         };
     } 
 }
@@ -960,7 +1045,6 @@ function setMainDateToNow() {
     if (dateInput) dateInput.value = localISO;
 }
 
-// ⚡ MOTOR DE RENDIMIENTO CONTROLADO CON PAGINACIÓN DINÁMICA (10.4)
 function updateUI() {
     const body = document.getElementById('history-body'); body.innerHTML = "";
     let tin = 0, tout = 0, mBank = 0, mCash = 0;
@@ -1063,7 +1147,6 @@ function updateUI() {
         
         let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : (isUsoExterno ? 'adj-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')))));
         
-        // 🛠️ FACTURAS EN MODAL EXTERNO SIN RUPTURA
         let imgBtn = "";
         if (m.img) {
             if (m.img.startsWith("http")) {
@@ -1111,7 +1194,6 @@ function updateUI() {
     document.getElementById('net-profit').innerText = "₡" + formatVisual((tin - tout) + virtualProfitBase, 2);
 }
 
-// FUNCIONES DE PAGINACIÓN CRONOLÓGICA (10.4)
 window.loadMoreMovements = function() {
     window.maxVisibleMovements += 50;
     updateUI();
@@ -1194,7 +1276,7 @@ function processTableFile(input) {
 
 function exportDataBackup() {
     const backupPackage = {
-        version: "10.4", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
+        version: "10.5", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
@@ -1257,7 +1339,16 @@ function fixStaffEntryTime(i) { const now = new Date(), offset = now.getTimezone
 function clearStaffEntryTime(i) { if(staff[i]) { staff[i].activeIn = ""; saveStaff(); renderStaff(); } }
 
 function renderStaff() {
-    const list = document.getElementById('staff-list'); list.innerHTML = "";
+    const list = document.getElementById('staff-list'); if (!list) return;
+    
+    // Capturar memoria de inputs manuales no enviados antes de borrar el HTML
+    let outValues = {};
+    staff.forEach((s, i) => {
+        const inp = document.getElementById(`dt-out-${i}`);
+        if (inp) outValues[i] = inp.value;
+    });
+
+    list.innerHTML = "";
     staff.forEach((s, i) => {
         let aguinaldoTotal = 0, sueldoTotal = 0;
         if(s.shifts) {
@@ -1341,6 +1432,12 @@ function renderStaff() {
             </div>
         </div>`;
     });
+
+    // Restaurar memoria de inputs manuales no enviados inmediatamente
+    Object.keys(outValues).forEach(i => {
+        const inp = document.getElementById(`dt-out-${i}`);
+        if (inp) inp.value = outValues[i];
+    });
 }
 
 function openStaffHistory(i) {
@@ -1354,7 +1451,6 @@ function openStaffHistory(i) {
             else if(sh.type === 'PAYMENT_SUELDO') { det = `<i class="fas fa-check"></i> ${sh.desc}`; colorClass = 'adj-color'; }
             else if(sh.type === 'PAYMENT_AGUINALDO') { det = `<i class="fas fa-gift"></i> Pago Aguinaldo`; colorClass = 'aguinaldo-color'; }
             
-            // Facturas en Modal para Personal
             let imgBtn = "";
             if (sh.img) {
                 if (sh.img.startsWith("http")) {
@@ -1401,7 +1497,6 @@ function addHours(i) { const s = staff[i], inV = document.getElementById(`dt-in-
 
 function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-amt-${i}`).value), dsc = document.getElementById(`adv-desc-${i}`).value || 'Adelanto'; if(amt <= 0) return showMsg("Monto inválido"); staff[i].debt -= amt; if(!staff[i].shifts) staff[i].shifts = []; staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); saveStaff(); renderStaff(); document.getElementById(`adv-amt-${i}`).value = ""; document.getElementById('adv-desc-' + i).value = ""; syncToCloud(); }
 
-/* FILTRADO EXACTO POR LATESTPAYMENTID */
 function resetDebt(i) { 
     if(!staff[i].shifts) return showMsg("No hay sueldo pendiente."); 
     
@@ -1834,7 +1929,6 @@ function updateBodyScroll() {
 function openModal(t, c) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('history-modal').style.display = 'flex'; updateBodyScroll(); }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; updateBodyScroll(); }
 
-// 🛠️ REPRODUCTOR DE ENLACES DRIVE MODIFICADO: Previene renderizado roto usando una pestaña externa para links remotos
 function zoomImage(s, id = null, staffIdx = null) { 
     currentZoomedId = id; 
     currentZoomedStaffIdx = staffIdx; 
@@ -1886,7 +1980,6 @@ function deleteCurrentZoomedImage() {
     });
 }
 
-// 🛠️ LIMPIADOR QUIRÚRGICO DE ENLACES FANTASMA
 window.clearMovementImage = function(id) {
     const mIdx = movements.findIndex(m => m.id === id);
     if (mIdx !== -1) {
@@ -1895,7 +1988,7 @@ window.clearMovementImage = function(id) {
         closeModal('history-modal');
         updateUI();
         syncToCloud();
-        showMsg("Enlace fantasma de factura limpiado. Se ha reactivado la cruz azul.");
+        showMsg("Enlace de factura limpiado de forma segura.");
     }
 };
 
@@ -2109,7 +2202,6 @@ function searchInPeriod() {
             let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
             let cCls = isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : 'profit');
             
-            // Facturas en Modal en Cierre de Periodo
             let imgBtn = "";
             if (m.img) {
                 if (m.img.startsWith("http")) {

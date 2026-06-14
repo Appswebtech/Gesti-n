@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 10.5 - Edición Nube Unificada</title>
+<title>Gestión Total 10.7 - Edición Nube Unificada</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -36,6 +36,7 @@ header { border-bottom: 2px solid #0026ff; padding-bottom: 10px; margin-bottom: 
 
 .profit { color: #25D366; } .expense { color: #ff3b3b; } .adj-color { color: #0026ff; } .bank-color { color: #0026ff; } .cash-color { color: #25D366; }
 .aguinaldo-color { color: #ffcc00 !important; }
+.transfer-color { color: #ff8c00 !important; font-weight: bold; }
 .balance { grid-column: span 2; border: 1px solid #0026ff; background: rgba(0, 38, 255, 0.05); }
 .profit-card { grid-column: span 2; border: 1px solid #25D366; background: rgba(37, 211, 102, 0.05); }
 
@@ -59,6 +60,7 @@ input:disabled { background: #222; color: #666; cursor: not-allowed; border-colo
 .btn-pay { background: #0026ff; } .btn-advance { background: #ff3b3b; }
 .btn-aguinaldo { background: #ffcc00; color: #000000; }
 .btn-cap { background: #ffcc00; color: #000000; } 
+.btn-transfer { background: #ff8c00; color: white; }
 .btn-grey { background: #444444; color: #ffffff; }
 
 .btn-danger-clear { background: #331111; color: #ff3b3b; width: 100%; padding: 18px; border-radius: 10px; cursor: pointer; border: 1px solid #442222; font-weight: bold; font-size: 0.8rem; margin-top: 20px; text-transform: uppercase; transition: 0.3s; }
@@ -118,7 +120,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 10.5 (SINCRO REALTIME)</div>
+    <div class="version-tag">VERSIÓN 10.7 (SINCRO REALTIME + HÍBRIDO)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -212,6 +214,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
             <button class="btn btn-in help-trigger" onclick="openMethodModal('IN')" data-title="Registro Ingreso" data-help="Suma dinero a tus cuentas y lo cuenta como ganancia neta.">REGISTRAR INGRESO</button>
             <button class="btn btn-out help-trigger" onclick="openMethodModal('OUT')" data-title="Registro Egreso" data-help="Resta dinero de tus cuentas y se descuenta de la ganancia neta.">REGISTRAR EGRESO</button>
+            <button class="btn btn-transfer help-trigger" onclick="openTransferModal()" data-title="Mover Dinero" data-help="Transfiere dinero entre Banco y Efectivo sin afectar las ganancias.">MOVER DINERO</button>
             <button class="btn btn-uso-ext help-trigger" onclick="openUsoExternoModal()" data-title="Uso Externo" data-help="Registra retiros de dinero para tus gastos personales fuera del negocio. Afecta los saldos de caja/banco en color azul pero NO ensucia la ganancia neta laboral.">REGISTRAR USO EXTERNO</button>
             <button class="btn btn-cap help-trigger" onclick="openAjustesModal()" data-title="Fijar Saldo / Crédito" data-help="Módulo para fijar saldos reales sincronizados de caja o guardar cuentas por cobrar de créditos pendientes.">FIJAR SALDO REAL / CRÉDITO</button>
         </div>
@@ -308,9 +311,8 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.5 (SINCRO REALTIME)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 10.7 (SINCRO REALTIME + HÍBRIDO)</div>
 </div>
-
 <div id="help-card">
     <span class="close-x" onclick="document.getElementById('help-card').style.display='none'">×</span>
     <h3 id="help-title" style="color:#0026ff; margin-top:0;"></h3>
@@ -333,6 +335,8 @@ input:checked + .slider:before { transform: translateX(20px); }
 </div>
 
 <div id="method-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeMethodModal('method-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Método de Pago</h3><button class="btn btn-pay" onclick="executeEntry('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="executeEntry('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="executeEntry('SINPE')">📲 SINPE</button><button class="btn btn-pay" onclick="executeEntry('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
+
+<div id="transfer-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('transfer-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Mover Dinero</h3><p style="color:#aaa; font-size:0.75rem; margin-top:0; margin-bottom:20px;">Traslada saldo entre cuentas sin afectar las ganancias.</p><button class="btn btn-transfer" onclick="executeTransfer('B2C')">🏦 DE BANCO A EFECTIVO 💵</button><button class="btn btn-transfer" onclick="executeTransfer('C2B')">💵 DE EFECTIVO A BANCO 🏦</button></div></div>
 
 <div id="credit-release-modal" class="modal"><div class="modal-content-wrapper"><span class="close-x" onclick="closeModal('credit-release-modal')">×</span><h3 style="color:white; margin-bottom:15px;">Liberar Crédito: ¿Cómo pagaron?</h3><button class="btn btn-pay" onclick="releaseCreditToCashflow('EFECTIVO')">💵 EFECTIVO</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TARJETA')">💳 TARJETA</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('SINPE')">📲 SINPE</button><button class="btn btn-pay" onclick="releaseCreditToCashflow('TRANSFERENCIA')">🏦 TRANSF.</button></div></div>
 
@@ -368,7 +372,7 @@ let cierres = JSON.parse(localStorage.getItem('copo_cierres')) || [];
 let trashMovements = JSON.parse(localStorage.getItem('copo_trash')) || [];
 let virtualProfitBase = parseFloat(localStorage.getItem('copo_virtual_profit')) || 0;
 let lastResetDate = localStorage.getItem('copo_last_reset') || new Date(0).toISOString();
-let bizData = JSON.parse(localStorage.getItem('copo_biz_data')) || { name: "Gestión Total", owner: "", logo: "" };
+let bizData = JSON.parse(localStorage.getItem('copo_biz_data')) || { name: "Gestión Total", owner: "", logo: "", logoDriveId: "" };
 
 // VARIABLE DE CONTROL DE PAGINACIÓN CRONOLÓGICA
 window.maxVisibleMovements = 50;
@@ -446,7 +450,7 @@ window.onload = function() {
     window.addEventListener('online', updateSyncToggleUI);
     window.addEventListener('offline', updateSyncToggleUI);
 
-    // 🔄 BUCLE DE AUTO-SINCRONIZACIÓN OPTIMIZADO EN SEGUNDO PLANO (CADA 20 SEGUNDOS SILENCIOSO CON GUARDIA DE CAMBIOS)
+    // 🔄 BUCLE DE AUTO-SINCRONIZACIÓN OPTIMIZADO EN SEGUNDO PLANO (CADA 20 SEGUNDOS)
     setInterval(async () => {
         updateSyncToggleUI();
         if (window.syncOverride || !navigator.onLine) return;
@@ -462,6 +466,14 @@ window.onload = function() {
             }
         }
     }, 20000);
+
+    // BUCLE DE RECONEXIÓN AUTOMÁTICA PREVENTIVA CADA 50 MINUTOS (Previene desconexiones manuales)
+    setInterval(async () => {
+        if (gapiInited && gapi.client.getToken()) {
+            console.log("Renovando token de Google preventivamente (cada 50m)...");
+            await refreshGoogleTokenSilently();
+        }
+    }, 3000000);
 };
 
 function gapiLoad() { gapi.load('client', initializeGapiClient); }
@@ -577,9 +589,30 @@ async function checkAndCreateSpreadsheet() {
     }
 }
 
+// 📦 DESCARGADOR DE IMÁGENES A BASE64 DESDE GOOGLE DRIVE (SISTEMA HÍBRIDO)
+async function downloadDriveImageAsBase64(fileId) {
+    if (!gapiInited || !gapi.client.getToken()) return "";
+    try {
+        const token = gapi.client.getToken().access_token;
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error("File not found or forbidden");
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    } catch (err) {
+        console.error("Error descargando binario de Drive:", err);
+        return "";
+    }
+}
+
 // 📦 CARGADOR DE IMÁGENES BINARIO MULTIPART A GOOGLE DRIVE
 async function uploadImageToDrive(base64DataUrl, fileName) {
-    if (!gapiInited || !gapi.client.getToken()) return "";
+    if (!gapiInited || !gapi.client.getToken()) return null;
     try {
         const parts = base64DataUrl.split(',');
         const mimeType = parts[0].match(/:(.*?);/)[1];
@@ -602,14 +635,13 @@ async function uploadImageToDrive(base64DataUrl, fileName) {
             await gapi.client.drive.permissions.create({ fileId: fileId, resource: { role: 'reader', type: 'anyone' } });
         } catch(e){}
         let fileInfo = await gapi.client.drive.files.get({ fileId: fileId, fields: 'webViewLink' });
-        return fileInfo.result.webViewLink || "";
+        return { link: fileInfo.result.webViewLink || "", id: fileId };
     } catch (err) {
         console.error("Error fletando imagen a Google Drive:", err);
-        return "";
+        return null;
     }
 }
-
-// 📥 DESCARGAR BASE DE DATOS CON FUSIÓN INTELIGENTE POR ESTADOS ANTI-APLANADORA Y PRESERVACIÓN DE UI (10.5)
+// 📥 DESCARGAR BASE DE DATOS CON FUSIÓN INTELIGENTE POR ESTADOS ANTI-APLANADORA Y PRESERVACIÓN DE UI (10.7)
 async function pullFromCloud(isRetry = false) {
     if (!gapiInited || !gapi.client.getToken()) return;
     try {
@@ -618,7 +650,7 @@ async function pullFromCloud(isRetry = false) {
         
         let hasChanges = false;
         
-        // 1. Descarga y Fusión Inteligente de Movimientos Contables por Estado Real (Columna J)
+        // 1. Descarga y Fusión Inteligente de Movimientos Contables
         let respCont = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Contabilidad!A2:J10000" });
         let rowsCont = respCont.result.values;
         if (rowsCont && rowsCont.length > 0) {
@@ -641,7 +673,6 @@ async function pullFromCloud(isRetry = false) {
                 }
             });
 
-            // Sincronizar movimientos de papelera de reciclaje local
             let localTrashIds = new Set(trashMovements.map(t => t.id));
             cloudTrashMovements.forEach(tm => {
                 if (!localTrashIds.has(tm.id)) {
@@ -651,9 +682,7 @@ async function pullFromCloud(isRetry = false) {
             });
             localStorage.setItem('copo_trash', JSON.stringify(trashMovements));
 
-            // Eliminar de movimientos locales los que estén marcados eliminados en la nube
             movements = movements.filter(m => !cloudTrashIds.has(m.id));
-
             let allCloudIds = new Set([...cloudMovements.map(m => m.id), ...cloudTrashIds]);
             let localOnlyMovements = movements.filter(m => !allCloudIds.has(m.id));
             let mergedMovements = [...localOnlyMovements, ...cloudMovements];
@@ -674,7 +703,7 @@ async function pullFromCloud(isRetry = false) {
             }
         }
 
-        // 2. Descarga y Fusión de Planillas de Colaboradores (Preservando Estados Locales Activos de UI)
+        // 2. Descarga y Fusión de Planillas
         let respPlan = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Planilla!A2:D10000" });
         let rowsPlan = respPlan.result.values;
         if (rowsPlan && rowsPlan.length > 0) {
@@ -714,13 +743,13 @@ async function pullFromCloud(isRetry = false) {
             }
         }
 
-        // 3. Descarga de Identidad con Guardia de Enlaces de Logo y Fusión de Etiquetas Independientes
+        // 3. Descarga de Identidad (Logo Híbrido Drive -> Base64 Local)
         let respConf = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Configuracion!A2:B15" });
         let rowsConf = respConf.result.values;
         if (rowsConf && rowsConf.length > 0) {
             let oldBizName = bizData.name;
             let oldBizOwner = bizData.owner;
-            let oldBizLogo = bizData.logo;
+            let oldBizLogoDriveId = bizData.logoDriveId;
             let oldLastResetDate = lastResetDate;
             let oldVirtualProfitBase = virtualProfitBase;
             let oldTags = JSON.stringify(savedTags);
@@ -728,14 +757,7 @@ async function pullFromCloud(isRetry = false) {
             rowsConf.forEach(r => {
                 if (r[0] === 'biz_name' && !window.isBackgroundSyncInProgress) bizData.name = r[1];
                 if (r[0] === 'biz_owner' && !window.isBackgroundSyncInProgress) bizData.owner = r[1];
-                
-                if (r[0] === 'biz_logo' && !window.isBackgroundSyncInProgress) {
-                    if (r[1] && r[1].startsWith('http')) {
-                        bizData.logo = r[1]; // Preferir siempre links de nube limpios sobre Base64 local
-                    } else if (!bizData.logo && r[1]) {
-                        bizData.logo = r[1];
-                    }
-                }
+                if (r[0] === 'biz_logo_drive_id' && !window.isBackgroundSyncInProgress) bizData.logoDriveId = r[1];
                 
                 if (r[0] === 'last_reset') { lastResetDate = r[1]; localStorage.setItem('copo_last_reset', lastResetDate); }
                 if (r[0] === 'virtual_profit') { virtualProfitBase = parseFloat(r[1]) || 0; localStorage.setItem('copo_virtual_profit', virtualProfitBase.toString()); }
@@ -755,8 +777,16 @@ async function pullFromCloud(isRetry = false) {
                 if (r[0] === 'copo_pin_hash') { secure_pin_hash = r[1]; localStorage.setItem('copo_pin_hash', secure_pin_hash); }
                 if (r[0] === 'copo_raw_pin') { localStorage.setItem('copo_raw_pin', r[1]); }
             });
+            
+            // Fusión Logo Híbrido - Si el Drive ID cambió, descargo en Base64 a mi memoria local
+            if (!window.isBackgroundSyncInProgress && bizData.logoDriveId && bizData.logoDriveId !== oldBizLogoDriveId) {
+                let b64 = await downloadDriveImageAsBase64(bizData.logoDriveId);
+                if (b64) {
+                    bizData.logo = b64;
+                }
+            }
 
-            if (!window.isBackgroundSyncInProgress && (oldBizName !== bizData.name || oldBizOwner !== bizData.owner || oldBizLogo !== bizData.logo || oldLastResetDate !== lastResetDate || oldVirtualProfitBase !== virtualProfitBase || oldTags !== JSON.stringify(savedTags))) {
+            if (!window.isBackgroundSyncInProgress && (oldBizName !== bizData.name || oldBizOwner !== bizData.owner || oldBizLogoDriveId !== bizData.logoDriveId || oldLastResetDate !== lastResetDate || oldVirtualProfitBase !== virtualProfitBase || oldTags !== JSON.stringify(savedTags))) {
                 localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
                 applyBusinessIdentity();
                 if(document.getElementById('biz-name-input')) document.getElementById('biz-name-input').value = bizData.name;
@@ -775,14 +805,13 @@ async function pullFromCloud(isRetry = false) {
         console.error("Error descargando datos:", err); 
         let is401 = err.status === 401 || (err.result && err.result.error && err.result.error.code === 401);
         if (is401 && !isRetry) {
-            console.log("Token vencido en pull. Intentando refresh silencioso...");
             let refreshed = await refreshGoogleTokenSilently();
             if (refreshed) return await pullFromCloud(true);
         }
     }
 }
 
-// 📤 SUBIR TODA LA BASE LOCAL A LA NUBE (CON RESPALDO INTEGRAL DE CREDENCIALES PIN Y ESTADOS)
+// 📤 SUBIR TODA LA BASE LOCAL A LA NUBE
 async function syncToCloud(isRetry = false) {
     if (!gapiInited || !gapi.client.getToken() || window.syncOverride) return;
     const statusBadge = document.getElementById('cloud-status');
@@ -819,7 +848,7 @@ async function syncToCloud(isRetry = false) {
             ['Propiedad', 'Valor'], 
             ['biz_name', bizData.name || ''], 
             ['biz_owner', bizData.owner || ''], 
-            ['biz_logo', bizData.logo || ''],
+            ['biz_logo_drive_id', bizData.logoDriveId || ''],
             ['last_reset', lastResetDate || new Date(0).toISOString()],
             ['virtual_profit', virtualProfitBase.toString()],
             ['tags', JSON.stringify(savedTags)],
@@ -851,7 +880,6 @@ async function syncToCloud(isRetry = false) {
         console.error("Error en el flete de datos:", err);
         let is401 = err.status === 401 || (err.result && err.result.error && err.result.error.code === 401);
         if (is401 && !isRetry) {
-            console.log("Token vencido en sync. Intentando refresh silencioso...");
             let refreshed = await refreshGoogleTokenSilently();
             if (refreshed) return await syncToCloud(true);
         }
@@ -901,13 +929,8 @@ function applyBusinessIdentity() {
     const loginArea = document.getElementById('login-logo-area');
     const headerArea = document.getElementById('header-logo-area');
     
+    // Ahora leemos siempre la imagen pura en base64 desde local
     let logoSrc = bizData.logo || "";
-    if (logoSrc && logoSrc.includes("drive.google.com")) {
-        let idMatch = logoSrc.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || logoSrc.match(/id=([a-zA-Z0-9_-]+)/);
-        if (idMatch && idMatch[1]) {
-            logoSrc = `https://docs.google.com/uc?export=download&id=${idMatch[1]}`;
-        }
-    }
 
     let logoHtml = logoSrc ? `<img src="${logoSrc}" class="logo-img" onclick="zoomImage('${bizData.logo}', 'LOGO')">` : `<span class="logo-small">${bizData.name}</span>`;
     headerArea.innerHTML = `<div class="logo-container">${logoHtml}${bizData.owner ? `<span class="owner-text">${bizData.owner}</span>` : ""}</div>`;
@@ -921,26 +944,24 @@ function updateBusinessLogo(input) {
         reader.readAsDataURL(file);
         reader.onload = async (e) => {
             let dataUrl = e.target.result;
-            
-            // Mostrar previsualización local inmediata
             bizData.logo = dataUrl;
-            applyBusinessIdentity();
+            applyBusinessIdentity(); // Visual local inmediata
             
             if (gapiInited && gapi.client.getToken()) {
                 const statusBadge = document.getElementById('cloud-status');
-                if (statusBadge) statusBadge.innerText = "Subiendo logo...";
-                const cloudUrl = await uploadImageToDrive(dataUrl, `Logo_Perfil_GestionTotal_${Date.now()}_${file.name}`);
-                if (cloudUrl) {
-                    bizData.logo = cloudUrl;
+                if (statusBadge) statusBadge.innerText = "Subiendo a Drive...";
+                const cloudRes = await uploadImageToDrive(dataUrl, `Logo_Perfil_GestionTotal_${Date.now()}_${file.name}`);
+                if (cloudRes && cloudRes.id) {
+                    bizData.logoDriveId = cloudRes.id;
                     localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
                     applyBusinessIdentity();
-                    showMsg("Foto de perfil subida a Drive y vinculada con éxito.");
+                    showMsg("Foto subida a Drive y vinculada permanentemente con Base64.");
                 } else {
-                    showMsg("No se pudo subir la imagen a Drive. Se mantendrá localmente de forma temporal.");
+                    showMsg("No se pudo subir a Drive, se mantendrá en memoria local.");
                 }
             } else {
                 localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
-                showMsg("Logo guardado localmente. Conéctese a Google para sincronizarlo con otros dispositivos.");
+                showMsg("Logo guardado localmente. Conéctate a Google para subirlo y protegerlo.");
             }
             await syncToCloud();
         };
@@ -971,7 +992,6 @@ function validatePin() {
     if(!val) return;
     const hashed = hashPin(val);
     const storedRawPin = localStorage.getItem('copo_raw_pin');
-    
     if (val === "1234" || hashed === secure_pin_hash || (storedRawPin && val === storedRawPin)) { 
         document.getElementById('login-screen').style.display = 'none'; 
         document.getElementById('admin-panel').style.display = 'block'; 
@@ -985,52 +1005,40 @@ function changePin() {
     const currentPin = document.getElementById('current-pin-input').value;
     const nPin = document.getElementById('new-pin-input').value;
     if(currentPin.length !== 4 || nPin.length !== 4) return showMsg("Ambos PIN deben ser de 4 dígitos");
-    
     const hashedCurrent = hashPin(currentPin);
     const storedRawPin = localStorage.getItem('copo_raw_pin');
     if(currentPin !== "1234" && hashedCurrent !== secure_pin_hash && currentPin !== storedRawPin) { 
         return showMsg("El PIN actual es incorrecto"); 
     }
-    
     secure_pin_hash = hashPin(nPin); 
     localStorage.setItem('copo_pin_hash', secure_pin_hash); 
     localStorage.setItem('copo_raw_pin', nPin);
-    document.getElementById('current-pin-input').value = "";
-    document.getElementById('new-pin-input').value = "";
+    document.getElementById('current-pin-input').value = ""; document.getElementById('new-pin-input').value = "";
     showMsg("PIN actualizado con éxito."); 
 }
 
 function getFormatedDate(d) { 
     let date = new Date(d); 
-    const days = ['dom','lun','mar','mié','jue','vie','sáb'];
-    let dayName = days[date.getDay()];
-    let day = date.getDate().toString().padStart(2, '0');
-    let month = (date.getMonth() + 1).toString().padStart(2, '0');
-    let year = date.getFullYear();
-    let hours = date.getHours();
-    let minutes = date.getMinutes().toString().padStart(2, '0');
-    let seconds = date.getSeconds().toString().padStart(2, '0');
-    let ampm = hours >= 12 ? 'pm' : 'am';
-    hours = hours % 12 || 12;
-    return `${dayName} ${day}/${month}/${year} ${hours}:${minutes}:${seconds}${ampm}`; 
+    const days = ['dom','lun','mar','mié','jue','vie','sáb']; let dayName = days[date.getDay()];
+    let day = date.getDate().toString().padStart(2, '0'); let month = (date.getMonth() + 1).toString().padStart(2, '0');
+    let year = date.getFullYear(); let hours = date.getHours(); let minutes = date.getMinutes().toString().padStart(2, '0');
+    let seconds = date.getSeconds().toString().padStart(2, '0'); let ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12 || 12; return `${dayName} ${day}/${month}/${year} ${hours}:${minutes}:${seconds}${ampm}`; 
 }
 
 function formatDateSlash(isoString) {
     if(!isoString) return "--/--/----";
     let d = new Date(isoString.includes('T') ? isoString : isoString + "T12:00:00");
-    let day = d.getDate().toString().padStart(2, '0');
-    let month = (d.getMonth() + 1).toString().padStart(2, '0');
+    let day = d.getDate().toString().padStart(2, '0'); let month = (d.getMonth() + 1).toString().padStart(2, '0');
     return `${day}/${month}/${d.getFullYear()}`;
 }
 
 function getFormatedTime(h) { const totalMin = Math.round(h * 60); return `${Math.floor(totalMin/60)}h ${totalMin%60}m`; }
-
 function formatVisual(num, decimals = 2) { 
     const privacy = document.getElementById('privacy-switch')?.checked;
     if (privacy) return "****";
     let fixed = Number(num || 0).toFixed(decimals);
-    let parts = fixed.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    let parts = fixed.split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     return parts.length > 1 ? parts[0] + ',' + parts[1] : parts[0];
 }
 
@@ -1038,8 +1046,7 @@ function cleanAmount(val) { return parseFloat(val.toString().replace(/\./g, "").
 
 function setMainDateToNow() {
     if (userInterruptedClock) return; 
-    const now = new Date();
-    const offset = now.getTimezoneOffset() * 60000;
+    const now = new Date(); const offset = now.getTimezoneOffset() * 60000;
     const localISO = new Date(now.getTime() - offset).toISOString().slice(0, 19); 
     const dateInput = document.getElementById('main-date-input');
     if (dateInput) dateInput.value = localISO;
@@ -1077,11 +1084,8 @@ function updateUI() {
 
         let affectsProfit = false;
         if (!isAdjustment && affect) {
-            if (!m.historical) {
-                affectsProfit = (m.date > lastResetDate);
-            } else {
-                affectsProfit = (m.id > resetTimestamp);
-            }
+            if (!m.historical) { affectsProfit = (m.date > lastResetDate); } 
+            else { affectsProfit = (m.id > resetTimestamp); }
         }
 
         if (affectsProfit) { 
@@ -1089,16 +1093,21 @@ function updateUI() {
             else if(m.type === 'OUT') tout += m.amount; 
         }
         
-        if(m.type !== 'CAP_BASE') {
+        if(m.type !== 'CAP_BASE' && m.type !== 'TRANSFER') {
             if (affect) {
                 let isEfectivo = (m.method === 'EFECTIVO' || m.method === '💵 EFECTIVO');
                 let effect = (m.type === 'IN' || m.type === 'ADJ_IN') ? m.amount : -m.amount;
-                
-                if (isEfectivo) {
-                    if (m.id > cutOffEfectivoId) mCash += effect;
-                } else {
-                    if (m.id > cutOffBancoId) mBank += effect;
-                }
+                if (isEfectivo) { if (m.id > cutOffEfectivoId) mCash += effect; } 
+                else { if (m.id > cutOffBancoId) mBank += effect; }
+            }
+        } else if (m.type === 'TRANSFER' && affect) {
+            // Mover dinero solo afecta cuentas bancarias y de efectivo (No Ganancias)
+            if (m.method === 'B2C') {
+                if (m.id > cutOffEfectivoId) mCash += m.amount;
+                if (m.id > cutOffBancoId) mBank -= m.amount;
+            } else if (m.method === 'C2B') {
+                if (m.id > cutOffEfectivoId) mCash -= m.amount;
+                if (m.id > cutOffBancoId) mBank += m.amount;
             }
         }
     });
@@ -1108,7 +1117,6 @@ function updateUI() {
     const esBusquedaElectronica = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
 
     let renderedCount = 0;
-    
     let displayMovements = [...movements];
     displayMovements.sort((x, y) => {
         let diff = new Date(y.date) - new Date(x.date);
@@ -1120,40 +1128,32 @@ function updateUI() {
         let isCap = m.type === 'CAP_BASE';
         let isCredit = m.type === 'CREDIT_PENDING';
         let isUsoExterno = m.type === 'ADJ_OUT';
+        let isTransfer = m.type === 'TRANSFER';
         
         let buscaMetodo = m.method ? m.method.toLowerCase() : "";
         let buscaDesc = m.desc ? m.desc.toLowerCase() : "";
-        let buscaTipoUsExt = isUsoExterno ? "uso externo gasto personal" : "";
+        let buscaTipoUsExt = isUsoExterno ? "uso externo gasto personal" : (isTransfer ? "mover dinero transferencia banco efectivo" : "");
         let textLinea = `${buscaDesc} ${buscaMetodo} ${buscaTipoUsExt} ${m.type}`.toLowerCase();
         
         let match = false;
-        if (v === "") {
-            match = true;
-        } else if (esBusquedaElectronica) {
-            match = textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple");
-        } else {
-            match = textLinea.includes(v);
-        }
+        if (v === "") { match = true; } 
+        else if (esBusquedaElectronica) { match = textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple"); } 
+        else { match = textLinea.includes(v); }
 
         if (!match) return;
-
-        if (v === "" && renderedCount >= window.maxVisibleMovements) {
-            return;
-        }
+        if (v === "" && renderedCount >= window.maxVisibleMovements) return;
         renderedCount++;
 
         let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
         let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') ? m.amount : -m.amount;
-        
-        let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : (isUsoExterno ? 'adj-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit')))));
+        let effectStr = isTransfer ? formatVisual(m.amount) : formatVisual(effect);
+
+        let colorClass = isCap ? 'cash-color' : (isCredit ? 'credit-color' : (isUsoExterno ? 'adj-color' : (isTransfer ? 'transfer-color' : (isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : (m.type.startsWith('ADJ') ? 'adj-color' : 'profit'))))));
         
         let imgBtn = "";
         if (m.img) {
-            if (m.img.startsWith("http")) {
-                imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.2rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`;
-            } else {
-                imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`;
-            }
+            if (m.img.startsWith("http")) { imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.2rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`; } 
+            else { imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`; }
         } else {
             imgBtn = `<button class="btn-add-img" onclick="triggerFileSelect(${m.id})"><i class="fas fa-plus-circle"></i></button>`;
         }
@@ -1163,12 +1163,14 @@ function updateUI() {
         let isActivelyAffecting = m.affectProfit;
         let historialTag = m.historical ? ` (HISTÓRICO${isActivelyAffecting ? ' - AFECTA FLUJO' : ' - SILENCIOSO'})` : (isActivelyAffecting ? '' : ' [S/AFECTAR CUADROS]');
         let usoExternoTag = isUsoExterno ? ' [USO EXTERNO]' : '';
+        let displayMethod = m.method;
+        if(isTransfer) displayMethod = m.method === 'B2C' ? 'Banco ➔ Efectivo' : 'Efectivo ➔ Banco';
 
         body.innerHTML += `<tr class="${isCap ? 'row-cap-base' : (isCredit ? 'row-credit-pending' : '')}">
             <td style="white-space:nowrap">${getFormatedDate(m.date)}</td>
-            <td>${m.desc}<br><small>${m.method}${isCap ? ' [SALDO FIJADO]' : (isCredit ? ' [CRÉDITO PENDIENTE]' : '')}${usoExternoTag}${historialTag}</small></td>
+            <td>${m.desc}<br><small>${displayMethod}${isCap ? ' [SALDO FIJADO]' : (isCredit ? ' [CRÉDITO PENDIENTE]' : '')}${usoExternoTag}${historialTag}</small></td>
             <td style="text-align:center">${imgBtn}</td>
-            <td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${formatVisual(effect)}</td>
+            <td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${effectStr}</td>
             <td style="text-align:right; white-space:nowrap;">
                 ${creditActionHtml}
                 <button class="btn-icon" style="color:#0026ff" onclick="editMovement(${m.id})"><i class="fas fa-edit"></i></button>
@@ -1178,14 +1180,10 @@ function updateUI() {
     });
 
     document.getElementById('mov-counter-val').innerText = renderedCount;
-
     const ctrlArea = document.getElementById('history-controls-area');
     if (ctrlArea) {
-        if (v === "" && movements.length > window.maxVisibleMovements) {
-            ctrlArea.style.display = 'flex';
-        } else {
-            ctrlArea.style.display = 'none';
-        }
+        if (v === "" && movements.length > window.maxVisibleMovements) { ctrlArea.style.display = 'flex'; } 
+        else { ctrlArea.style.display = 'none'; }
     }
 
     document.getElementById('val-bank').innerText = "₡" + formatVisual(mBank, 2);
@@ -1194,52 +1192,29 @@ function updateUI() {
     document.getElementById('net-profit').innerText = "₡" + formatVisual((tin - tout) + virtualProfitBase, 2);
 }
 
-window.loadMoreMovements = function() {
-    window.maxVisibleMovements += 50;
-    updateUI();
-};
-window.loadAllMovements = function() {
-    window.maxVisibleMovements = Infinity;
-    updateUI();
-};
+window.loadMoreMovements = function() { window.maxVisibleMovements += 50; updateUI(); };
+window.loadAllMovements = function() { window.maxVisibleMovements = Infinity; updateUI(); };
 
-function openCreditReleaseModal(id) {
-    selectedCreditId = id;
-    document.getElementById('credit-release-modal').style.display = 'flex';
-    updateBodyScroll();
-}
-
+function openCreditReleaseModal(id) { selectedCreditId = id; document.getElementById('credit-release-modal').style.display = 'flex'; updateBodyScroll(); }
 function releaseCreditToCashflow(methodSelected) {
     const mIdx = movements.findIndex(m => m.id === selectedCreditId);
     if (mIdx !== -1) {
-        movements[mIdx].type = 'IN';
-        movements[mIdx].method = methodSelected;
+        movements[mIdx].type = 'IN'; movements[mIdx].method = methodSelected;
         movements[mIdx].desc = movements[mIdx].desc + ` (Saldado en ${methodSelected})`;
         movements[mIdx].date = new Date().toISOString(); 
-
         localStorage.setItem('copo_data', JSON.stringify(movements));
-        closeModal('credit-release-modal');
-        updateUI();
-        syncToCloud();
+        closeModal('credit-release-modal'); updateUI(); syncToCloud();
         showMsg("¡Crédito cobrado con éxito! Fondos agregados al flujo activo.");
     }
     selectedCreditId = null;
 }
 
-function triggerFileSelect(id, staffIdx = null) { 
-    currentUploadContext.id = id; currentUploadContext.staffIdx = staffIdx;
-    const fileInput = document.getElementById('table-file-input');
-    fileInput.value = ""; fileInput.click(); 
-}
+function triggerFileSelect(id, staffIdx = null) { currentUploadContext.id = id; currentUploadContext.staffIdx = staffIdx; const fileInput = document.getElementById('table-file-input'); fileInput.value = ""; fileInput.click(); }
 
 function processTableFile(input) {
-    const file = input.files[0];
-    const targetMoveId = currentUploadContext.id;
-    const targetStaffIdx = currentUploadContext.staffIdx;
-
+    const file = input.files[0]; const targetMoveId = currentUploadContext.id; const targetStaffIdx = currentUploadContext.staffIdx;
     if (file && targetMoveId !== null) {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
+        const reader = new FileReader(); reader.readAsDataURL(file);
         reader.onload = async (e) => {
             let dataUrl = e.target.result;
             const statusBadge = document.getElementById('cloud-status');
@@ -1247,41 +1222,27 @@ function processTableFile(input) {
 
             let finalUrl = dataUrl;
             if (gapiInited && gapi.client.getToken()) {
-                finalUrl = await uploadImageToDrive(dataUrl, `Factura_${targetMoveId}_${file.name}`);
+                let res = await uploadImageToDrive(dataUrl, `Factura_${targetMoveId}_${file.name}`);
+                if (res) finalUrl = res.link;
             }
 
             if (targetStaffIdx !== null) {
-                const sIdx = currentUploadContext.staffIdx;
-                const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === targetMoveId);
-                if (shiftIdx !== -1) { 
-                    staff[sIdx].shifts[shiftIdx].img = finalUrl; 
-                    saveStaff(); renderStaff(); 
-                    closeModal('history-modal'); openStaffHistory(sIdx); 
-                    syncToCloud(); 
-                }
+                const sIdx = currentUploadContext.staffIdx; const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === targetMoveId);
+                if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = finalUrl; saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(sIdx); syncToCloud(); }
             } else {
                 const mIdx = movements.findIndex(m => m.id === targetMoveId);
-                if (mIdx !== -1) { 
-                    movements[mIdx].img = finalUrl; 
-                    localStorage.setItem('copo_data', JSON.stringify(movements)); 
-                    updateUI(); 
-                    syncToCloud(); 
-                }
+                if (mIdx !== -1) { movements[mIdx].img = finalUrl; localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); syncToCloud(); }
             }
         };
     }
-    currentUploadContext = { id: null, staffIdx: null };
-    input.value = ""; 
+    currentUploadContext = { id: null, staffIdx: null }; input.value = ""; 
 }
 
 function exportDataBackup() {
-    const backupPackage = {
-        version: "10.5", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags
-    };
+    const backupPackage = { version: "10.7", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
     showMsg("Copia de seguridad exportada con éxito.");
 }
@@ -1294,27 +1255,19 @@ function importDataBackup(input) {
             const importedPackage = JSON.parse(e.target.result);
             if (!importedPackage.copo_data || !importedPackage.copo_pin_hash || !importedPackage.copo_staff) { return showMsg("Error: Archivo inválido."); }
             showConfirm("¿Está seguro de restaurar esta copia de seguridad?", () => {
-                localStorage.setItem('copo_pin_hash', importedPackage.copo_pin_hash);
-                localStorage.setItem('copo_data', JSON.stringify(importedPackage.copo_data));
-                localStorage.setItem('copo_staff', JSON.stringify(importedPackage.copo_staff));
-                localStorage.setItem('copo_cierres', JSON.stringify(importedPackage.copo_cierres || []));
-                localStorage.setItem('copo_trash', JSON.stringify(importedPackage.copo_trash || []));
-                localStorage.setItem('copo_virtual_profit', importedPackage.copo_virtual_profit || 0);
+                localStorage.setItem('copo_pin_hash', importedPackage.copo_pin_hash); localStorage.setItem('copo_data', JSON.stringify(importedPackage.copo_data));
+                localStorage.setItem('copo_staff', JSON.stringify(importedPackage.copo_staff)); localStorage.setItem('copo_cierres', JSON.stringify(importedPackage.copo_cierres || []));
+                localStorage.setItem('copo_trash', JSON.stringify(importedPackage.copo_trash || [])); localStorage.setItem('copo_virtual_profit', importedPackage.copo_virtual_profit || 0);
                 localStorage.setItem('copo_last_reset', importedPackage.copo_last_reset || new Date(0).toISOString());
-                
-                if(importedPackage.copo_tags) {
-                    localStorage.setItem('copo_tags', JSON.stringify(importedPackage.copo_tags));
-                    savedTags = importedPackage.copo_tags;
-                }
+                if(importedPackage.copo_tags) { localStorage.setItem('copo_tags', JSON.stringify(importedPackage.copo_tags)); savedTags = importedPackage.copo_tags; }
 
-                let bData = importedPackage.bizData || { name: "Gestión Total", owner: "", logo: "" };
+                let bData = importedPackage.bizData || { name: "Gestión Total", owner: "", logo: "", logoDriveId: "" };
                 localStorage.setItem('copo_biz_data', JSON.stringify(bData));
 
                 secure_pin_hash = importedPackage.copo_pin_hash; movements = importedPackage.copo_data; staff = importedPackage.copo_staff; cierres = importedPackage.cierres || []; trashMovements = importedPackage.copo_trash || []; virtualProfitBase = parseFloat(importedPackage.copo_virtual_profit || 0); lastResetDate = importedPackage.copo_last_reset || new Date(0).toISOString(); bizData = bData;
                 
                 if(bizData.name) document.getElementById('biz-name-input').value = bizData.name;
                 if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner;
-                
                 applyBusinessIdentity(); userInterruptedClock = false; setMainDateToNow(); updateUI(); renderStaff(); syncToCloud(); showMsg("¡Restauración Completa!");
             });
         } catch (err) { showMsg("Error crítico al procesar el archivo."); }
@@ -1323,31 +1276,18 @@ function importDataBackup(input) {
     reader.readAsText(file);
 }
 
-function filtrarMovimientos() {
-    updateUI();
-}
+function filtrarMovimientos() { updateUI(); }
 
 // MÓDULO PLANILLA
 function saveStaff() { localStorage.setItem('copo_staff', JSON.stringify(staff)); }
-function toggleStaff(i) { 
-    staff[i].isOpen = !staff[i].isOpen;
-    saveStaff();
-    renderStaff(); 
-}
+function toggleStaff(i) { staff[i].isOpen = !staff[i].isOpen; saveStaff(); renderStaff(); }
 function toggleFeature(i, prop) { if(staff[i]) { staff[i][prop] = !staff[i][prop]; saveStaff(); renderStaff(); } }
 function fixStaffEntryTime(i) { const now = new Date(), offset = now.getTimezoneOffset() * 60000, localISO = new Date(now.getTime() - offset).toISOString().slice(0, 16); if(staff[i]) { staff[i].activeIn = localISO; saveStaff(); renderStaff(); showMsg(`Hora de entrada fijada para ${staff[i].name}.`); } }
 function clearStaffEntryTime(i) { if(staff[i]) { staff[i].activeIn = ""; saveStaff(); renderStaff(); } }
 
 function renderStaff() {
     const list = document.getElementById('staff-list'); if (!list) return;
-    
-    // Capturar memoria de inputs manuales no enviados antes de borrar el HTML
-    let outValues = {};
-    staff.forEach((s, i) => {
-        const inp = document.getElementById(`dt-out-${i}`);
-        if (inp) outValues[i] = inp.value;
-    });
-
+    let outValues = {}; staff.forEach((s, i) => { const inp = document.getElementById(`dt-out-${i}`); if (inp) outValues[i] = inp.value; });
     list.innerHTML = "";
     staff.forEach((s, i) => {
         let aguinaldoTotal = 0, sueldoTotal = 0;
@@ -1359,34 +1299,18 @@ function renderStaff() {
                 else if(sh.type === 'PAYMENT_SUELDO') sueldoTotal += sh.earned;
             });
         }
-
-        let currentOrd = 0, currentExt = 0;
-        let latestPaymentId = 0;
+        let currentOrd = 0, currentExt = 0; let latestPaymentId = 0;
         if(s.shifts) {
-            s.shifts.forEach(sh => {
-                if(sh.type === 'PAYMENT_SUELDO' && sh.id > latestPaymentId) {
-                    latestPaymentId = sh.id;
-                }
-            });
-            s.shifts.forEach(sh => {
-                if(sh.type === 'SHIFT' && sh.id > latestPaymentId) {
-                    currentOrd += (sh.ord || 0);
-                    currentExt += (sh.ext || 0);
-                }
-            });
+            s.shifts.forEach(sh => { if(sh.type === 'PAYMENT_SUELDO' && sh.id > latestPaymentId) { latestPaymentId = sh.id; } });
+            s.shifts.forEach(sh => { if(sh.type === 'SHIFT' && sh.id > latestPaymentId) { currentOrd += (sh.ord || 0); currentExt += (sh.ext || 0); } });
         }
 
-        const savedInTime = s.activeIn || "";
-        const isActive = s.isOpen ? 'active' : '';
+        const savedInTime = s.activeIn || ""; const isActive = s.isOpen ? 'active' : '';
         
         list.innerHTML += `
         <div class="staff-bar ${isActive}">
-            <div class="staff-header-bar" onclick="toggleStaff(${i})">
-                <b>${s.name}</b>
-                <i class="fas fa-chevron-down" style="color:#555;"></i>
-            </div>
+            <div class="staff-header-bar" onclick="toggleStaff(${i})"><b>${s.name}</b><i class="fas fa-chevron-down" style="color:#555;"></i></div>
             <div class="staff-content">
-                
                 <div style="background:#0b0b0b; padding:12px; border-radius:8px; margin-bottom:12px; border:1px solid #222;">
                     <p style="margin:0 0 6px 0; font-size:0.85rem; color:#aaa;">Tarifa: <b style="color:white;">₡${formatVisual(s.rate)}/h</b></p>
                     <p style="margin:0 0 6px 0; font-size:0.85rem; color:#aaa;">Sueldo: <b class="profit">₡${formatVisual(sueldoTotal)}</b></p>
@@ -1395,11 +1319,7 @@ function renderStaff() {
                     <p style="margin:0 0 6px 0; font-size:0.85rem; color:#aaa;">Horas Ord. Actuales: <b class="bank-color">${currentOrd.toFixed(1)} h</b></p>
                     <p style="margin:0; font-size:0.85rem; color:#aaa;">Horas Ext. Actuales: <b style="color:#ffcc00;">${currentExt.toFixed(1)} h</b></p>
                 </div>
-
-                <div class="toggle-box">
-                    <span>Pago Horas Extras (x1.5)</span>
-                    <label class="switch"><input type="checkbox" ${s.useExtras ? 'checked' : ''} onchange="toggleFeature(${i}, 'useExtras')"><span class="slider"></span></label>
-                </div>
+                <div class="toggle-box"><span>Pago Horas Extras (x1.5)</span><label class="switch"><input type="checkbox" ${s.useExtras ? 'checked' : ''} onchange="toggleFeature(${i}, 'useExtras')"><span class="slider"></span></label></div>
                 
                 <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
                     <button class="btn-icon" style="color:#ffcc00" onclick="openAguinaldoCalc(${i})"><i class="fas fa-piggy-bank"></i></button>
@@ -1411,14 +1331,10 @@ function renderStaff() {
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <label class="input-label" style="margin:0;">Hora Entrada</label>
-                    <div>
-                        <button onclick="fixStaffEntryTime(${i})" style="background: #113311; color: #25D366; border: 1px solid #225522; border-radius: 4px; font-size: 0.65rem; padding: 2px 6px; cursor: pointer; font-weight: bold;"><i class="fas fa-bolt"></i> FIJAR AHORA</button>
-                        ${savedInTime ? `<button onclick="clearStaffEntryTime(${i})" style="background: transparent; color: #ff3b3b; border: none; font-size: 0.65rem; cursor: pointer; margin-left: 5px;"><i class="fas fa-times"></i></button>` : ''}
-                    </div>
+                    <div><button onclick="fixStaffEntryTime(${i})" style="background: #113311; color: #25D366; border: 1px solid #225522; border-radius: 4px; font-size: 0.65rem; padding: 2px 6px; cursor: pointer; font-weight: bold;"><i class="fas fa-bolt"></i> FIJAR AHORA</button>${savedInTime ? `<button onclick="clearStaffEntryTime(${i})" style="background: transparent; color: #ff3b3b; border: none; font-size: 0.65rem; cursor: pointer; margin-left: 5px;"><i class="fas fa-times"></i></button>` : ''}</div>
                 </div>
                 <input type="datetime-local" id="dt-in-${i}" value="${savedInTime}" onchange="staff[${i}].activeIn=this.value; saveStaff();" style="margin-bottom:10px;">
-                <label class="input-label">Hora Salida</label>
-                <input type="datetime-local" id="dt-out-${i}">
+                <label class="input-label">Hora Salida</label><input type="datetime-local" id="dt-out-${i}">
                 <button class="btn btn-in" style="margin-top:10px;" onclick="addHours(${i})">ANOTAR TURNO</button>
                 
                 <div style="background:#000; padding:15px; border-radius:10px; margin-top:10px;">
@@ -1432,12 +1348,7 @@ function renderStaff() {
             </div>
         </div>`;
     });
-
-    // Restaurar memoria de inputs manuales no enviados inmediatamente
-    Object.keys(outValues).forEach(i => {
-        const inp = document.getElementById(`dt-out-${i}`);
-        if (inp) inp.value = outValues[i];
-    });
+    Object.keys(outValues).forEach(i => { const inp = document.getElementById(`dt-out-${i}`); if (inp) inp.value = outValues[i]; });
 }
 
 function openStaffHistory(i) {
@@ -1453,15 +1364,9 @@ function openStaffHistory(i) {
             
             let imgBtn = "";
             if (sh.img) {
-                if (sh.img.startsWith("http")) {
-                    imgBtn = `<button class="btn-add-img" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`;
-                } else {
-                    imgBtn = `<img src="${sh.img}" class="img-preview-mini" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})">`;
-                }
-            } else {
-                imgBtn = `<button class="btn-add-img" onclick="triggerFileSelect(${sh.id}, ${i})"><i class="fas fa-plus-circle"></i></button>`;
-            }
-            
+                if (sh.img.startsWith("http")) { imgBtn = `<button class="btn-add-img" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`; } 
+                else { imgBtn = `<img src="${sh.img}" class="img-preview-mini" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})">`; }
+            } else { imgBtn = `<button class="btn-add-img" onclick="triggerFileSelect(${sh.id}, ${i})"><i class="fas fa-plus-circle"></i></button>`; }
             h += `<tr><td>${getFormatedDate(sh.date)}</td><td>${det}</td><td style="text-align:center">${imgBtn}</td><td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${formatVisual(sh.earned)}</td><td style="text-align:right; white-space:nowrap;">${actionBtnHtml}<button class="btn-icon" style="color:#ff3b3b" onclick="deleteStaffMovement(${i}, ${sh.id})"><i class="fas fa-trash"></i></button></td></tr>`;
         });
     }
@@ -1477,17 +1382,15 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
             tituloHtml = sh.type === 'PAYMENT_AGUINALDO' ? "Recibo: Aguinaldo Pagado" : "Recibo: Aguinaldo Registrado"; 
             const hOrd = meta.horasOrd !== undefined ? meta.horasOrd : (meta.textHorasOrd !== undefined ? meta.textHorasOrd : 0);
             const hExt = meta.horasExt !== undefined ? meta.horasExt : (meta.textHorasExt !== undefined ? meta.textHorasExt : 0);
-            htmlContent += `<p><b>Horas Ord:</b> ${hOrd.toFixed(1)} h</p><p><b>Horas Ext:</b> ${hExt.toFixed(1)} h</p><p style="color:#25D366;"><b>Acumulado Bruto:</b> ₡${formatVisual(meta.totalSueldoPuro)}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #ffcc00; padding:8px; border-radius:6px; color:#000000; background:#ffcc00; font-weight:bold;">${sh.type === 'PAYMENT_AGUINALDO' ? 'Monto Pagado' : 'Monto Aguinaldo'} (${meta.porcentaje || 8.33}%): ₡${formatVisual(Math.abs(sh.earned))}</h3>`; 
-        } 
-        else { tituloHtml = "Recibo: Sueldo Liquidado"; htmlContent += `<p><b>Horas Ord:</b> ${meta.horasOrd.toFixed(1)} h = <span>₡${formatVisual(meta.horasOrd * meta.tarifaBase)}</span></p><p><b>Horas Ext:</b> ${meta.horasExt.toFixed(1)} h = <span>₡${formatVisual(meta.horasExt * meta.tarifaBase * 1.5)}</span></p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="adj-color" style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #0026ff; padding:8px; border-radius:6px;">Total Liquidado: ₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
+            htmlContent += `<p><b>Horas Ord:</b> ${hOrd.toFixed(1)} h</p><p><b>Horas Ext:</b> ${hExt.toFixed(1)} h</p><p style="color:#25D366;"><b>Acumulado Bruto:</b> ₡${formatVisual(meta.totalSueldoPuro)}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #ffcc00; padding:8px; border-radius:6px; color:#000000; background:#ffcc00; font-weight:bold;">${sh.type === 'PAYMENT_AGUINALDO' ? 'Monto Pagado' : 'Monto Aguinaldo'} (División /12): ₡${formatVisual(Math.abs(sh.earned))}</h3>`; 
+        } else { tituloHtml = "Recibo: Sueldo Liquidado"; htmlContent += `<p><b>Horas Ord:</b> ${meta.horasOrd.toFixed(1)} h = <span>₡${formatVisual(meta.horasOrd * meta.tarifaBase)}</span></p><p><b>Horas Ext:</b> ${meta.horasExt.toFixed(1)} h = <span>₡${formatVisual(meta.horasExt * meta.tarifaBase * 1.5)}</span></p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="adj-color" style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #0026ff; padding:8px; border-radius:6px;">Total Liquidado: ₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
     } else {
         if (sh.type === 'SHIFT') { tituloHtml = "Turno de Trabajo"; htmlContent += `<p>${getFormatedTime(sh.ord)} ord y ${getFormatedTime(sh.ext)} ext.</p><hr style="border:1px solid #333;"><h3 class="profit" style="text-align:center;">₡${formatVisual(sh.earned)}</h3>`; } 
         else if (sh.type === 'ADVANCE') { tituloHtml = "Adelanto Otorgado"; htmlContent += `<p><b>Detalle:</b> ${sh.desc || "Adelanto Directo"}</p><hr style="border:1px dashed #333;"><h3 class="expense" style="text-align:center;">₡${formatVisual(Math.abs(sh.earned))}</h3>`; } 
         else if (sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') {
             tituloHtml = sh.type === 'PAYMENT_AGUINALDO' ? "Recibo: Aguinaldo Pagado" : "Recibo: Aguinaldo Registrado";
             htmlContent += `<p><b>Detalle:</b> ${sh.desc || "Aguinaldo de Periodo"}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 style="text-align:center; margin:10px 0; font-size:1.15rem; border:1px solid #ffcc00; padding:8px; border-radius:6px; color:#000000; background:#ffcc00; font-weight:bold;">${sh.type === 'PAYMENT_AGUINALDO' ? 'Monto Pagado' : 'Monto Aguinaldo'}: ₡${formatVisual(Math.abs(sh.earned))}</h3>`;
-        }
-        else { tituloHtml = "Liquidación Histórica"; htmlContent += `<p>${sh.desc || "Histórico"}</p><hr style="border:1px dashed #333;"><h3 class="adj-color" style="text-align:center;">₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
+        } else { tituloHtml = "Liquidación Histórica"; htmlContent += `<p>${sh.desc || "Histórico"}</p><hr style="border:1px dashed #333;"><h3 class="adj-color" style="text-align:center;">₡${formatVisual(Math.abs(sh.earned))}</h3>`; }
     }
     htmlContent += `</div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal'); openStaffHistory(${staffIdx});">VOLVER</button>`; openModal(tituloHtml, htmlContent);
 }
@@ -1499,53 +1402,27 @@ function giveAdvance(i) { const amt = cleanAmount(document.getElementById(`adv-a
 
 function resetDebt(i) { 
     if(!staff[i].shifts) return showMsg("No hay sueldo pendiente."); 
-    
-    let latestPaymentId = 0;
-    staff[i].shifts.forEach(sh => {
-        if(sh.type === 'PAYMENT_SUELDO' && sh.id > latestPaymentId) {
-            latestPaymentId = sh.id;
-        }
-    });
-    
+    let latestPaymentId = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'PAYMENT_SUELDO' && sh.id > latestPaymentId) { latestPaymentId = sh.id; } });
     let tOrd = 0, tExt = 0, sueldoPuro = 0, fechas = []; 
     staff[i].shifts.forEach(sh => { 
         if(sh.id > latestPaymentId) {
-            if(sh.type === 'SHIFT' || sh.type === 'ADVANCE') {
-                sueldoPuro += sh.earned;
-            }
-            if(sh.type === 'SHIFT') { 
-                tOrd += (sh.ord || 0); 
-                tExt += (sh.ext || 0); 
-                fechas.push(new Date(sh.date).getTime()); 
-            } 
+            if(sh.type === 'SHIFT' || sh.type === 'ADVANCE') { sueldoPuro += sh.earned; }
+            if(sh.type === 'SHIFT') { tOrd += (sh.ord || 0); tExt += (sh.ext || 0); fechas.push(new Date(sh.date).getTime()); } 
         }
     }); 
-    
     if(sueldoPuro <= 0) return showMsg("No hay sueldo pendiente para liquidar."); 
-    
     fechas.sort((a,b) => a - b); 
     let fDesde = fechas.length > 0 ? new Date(fechas[0]).toISOString() : new Date().toISOString(), 
         fHasta = fechas.length > 0 ? new Date(fechas[fechas.length - 1]).toISOString() : new Date().toISOString(), 
         detail = `Sueldo: ${getFormatedTime(tOrd)} ord` + (tExt > 0 ? ` + ${getFormatedTime(tExt)} ext` : ''); 
         
     showConfirm(`¿Liquidar sueldo de ₡${formatVisual(sueldoPuro)}?`, () => { 
-        staff[i].shifts.unshift({ 
-            id: Date.now(), 
-            date: new Date().toISOString(), 
-            earned: -sueldoPuro, 
-            type: 'PAYMENT_SUELDO', 
-            desc: detail, 
-            img: "", 
-            metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } 
-        }); 
-        staff[i].debt -= sueldoPuro; 
-        saveStaff(); 
-        renderStaff(); 
-        syncToCloud();
+        staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -sueldoPuro, type: 'PAYMENT_SUELDO', desc: detail, img: "", metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta } }); 
+        staff[i].debt -= sueldoPuro; saveStaff(); renderStaff(); syncToCloud();
     }); 
 }
 
-function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose); let metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : null; if(metaCopia) { if(metaCopia.textHorasOrd !== undefined && metaCopia.horasOrd === undefined) metaCopia.horasOrd = metaCopia.textHorasOrd; if(metaCopia.textHorasExt !== undefined && metaCopia.horasExt === undefined) metaCopia.horasExt = metaCopia.textHorasExt; } else { metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: 8.33 }; } showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); syncToCloud(); }); }
+function payAguinaldoOnly(i) { if(!staff[i].shifts) return showMsg("No hay aguinaldo pendiente."); let aguinaldoTotal = 0; staff[i].shifts.forEach(sh => { if(sh.type === 'AGUINALDO' || sh.type === 'PAYMENT_AGUINALDO') aguinaldoTotal += sh.earned; }); if(aguinaldoTotal <= 0) return showMsg("No hay aguinaldo pendiente."); let calcAguinaldoNode = staff[i].shifts.find(sh => sh.type === 'AGUINALDO' && sh.metaDesglose); let metaCopia = calcAguinaldoNode ? JSON.parse(JSON.stringify(calcAguinaldoNode.metaDesglose)) : null; if(metaCopia) { if(metaCopia.textHorasOrd !== undefined && metaCopia.horasOrd === undefined) metaCopia.horasOrd = metaCopia.textHorasOrd; if(metaCopia.textHorasExt !== undefined && metaCopia.horasExt === undefined) metaCopia.horasExt = metaCopia.textHorasExt; } else { metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: "1/12" }; } showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); staff[i].debt -= aguinaldoTotal; saveStaff(); renderStaff(); syncToCloud(); }); }
 
 function openAguinaldoCalc(i) { 
     openModal("Aguinaldo", `
@@ -1554,65 +1431,32 @@ function openAguinaldoCalc(i) {
             <input type="date" id="ag-from">
             <label class="input-label" style="text-align:center; color:white;">HASTA</label>
             <input type="date" id="ag-to">
-            <label class="input-label" style="text-align:center; color:white;">% A CALCULAR</label>
-            <input type="number" id="ag-percent" value="8.33" step="0.01" style="text-align:center; font-weight:bold; font-size: 1.2rem;">
-            <button class="btn btn-pay" style="color:white;" onclick="calcAguinaldo833(${i})">CALCULAR</button>
+            <label class="input-label" style="text-align:center; color:white;">CÁLCULO LEGAL REQUERIDO</label>
+            <input type="text" id="ag-percent" value="Fórmula de División Exacta (/12)" disabled style="text-align:center; font-weight:bold; font-size: 0.95rem; background:#000; color:#ffcc00; border: 1px solid #333;">
+            <button class="btn btn-pay" style="color:white;" onclick="calcAguinaldo833(${i})">CALCULAR AGUINALDO</button>
             <div id="ag-res"></div>
         </div>`); 
 }
 
 function calcAguinaldo833(i) { 
-    const fV = document.getElementById('ag-from').value, 
-          tV = document.getElementById('ag-to').value,
-          percent = parseFloat(document.getElementById('ag-percent').value) || 0; 
-    
+    const fV = document.getElementById('ag-from').value, tV = document.getElementById('ag-to').value;
     if(!fV || !tV) return showMsg("Fechas incompletas"); 
-    const f = new Date(fV + "T00:00:00").getTime(), 
-          t = new Date(tV + "T23:59:59").getTime(); 
-    
+    const f = new Date(fV + "T00:00:00").getTime(), t = new Date(tV + "T23:59:59").getTime(); 
     let totalS = 0, tOrd = 0, tExt = 0; 
-    if(staff[i].shifts) { 
-        staff[i].shifts.forEach(sh => { 
-            const sD = new Date(sh.date).getTime(); 
-            if(sD >= f && sD <= t && sh.earned > 0 && sh.type === 'SHIFT') { 
-                totalS += sh.earned; 
-                tOrd += sh.ord; 
-                tExt += sh.ext; 
-            } 
-        }); 
-    } 
-    const monto = totalS * (percent / 100); 
+    if(staff[i].shifts) { staff[i].shifts.forEach(sh => { const sD = new Date(sh.date).getTime(); if(sD >= f && sD <= t && sh.earned > 0 && sh.type === 'SHIFT') { totalS += sh.earned; tOrd += sh.ord; tExt += sh.ext; } }); } 
+    const monto = totalS / 12; // DIVISOR EXACTO INTACTO SEGÚN TUS INSTRUCCIONES
     document.getElementById('ag-res').innerHTML = `
         <h2 class="profit">₡${formatVisual(monto)}</h2>
-        <button class="btn btn-in" onclick="addAguinaldoToStaff(${i}, ${monto}, '${fV}', '${tV}', ${tOrd}, ${tExt}, ${totalS}, ${percent})">AGREGAR A PLANILLA</button>`; 
+        <button class="btn btn-in" onclick="addAguinaldoToStaff(${i}, ${monto}, '${fV}', '${tV}', ${tOrd}, ${tExt}, ${totalS}, '1/12')">AGREGAR A PLANILLA</button>`; 
 }
 
 function addAguinaldoToStaff(i, monto, f, t, tOrd, tExt, totalS, percent) { 
     if(monto <= 0) return showMsg("Monto en 0"); 
     staff[i].debt += monto; 
-    const desc = `Aguinaldo (${percent}%) del ${formatDateSlash(f)} al ${formatDateSlash(t)}`; 
+    const desc = `Aguinaldo (Cálculo Legal /12) del ${formatDateSlash(f)} al ${formatDateSlash(t)}`; 
     if(!staff[i].shifts) staff[i].shifts = []; 
-    staff[i].shifts.unshift({ 
-        id: Date.now(), 
-        date: new Date().toISOString(), 
-        earned: monto, 
-        type: 'AGUINALDO', 
-        desc: desc, 
-        img: "" , 
-        metaDesglose: { 
-            horasOrd: tOrd, 
-            horasExt: tExt, 
-            tarifaBase: staff[i].rate, 
-            desde: new Date(f + "T00:00:00").toISOString(), 
-            hasta: new Date(t + "T23:59:59").toISOString(), 
-            totalSueldoPuro: totalS,
-            porcentaje: percent 
-        } 
-    }); 
-    saveStaff(); 
-    renderStaff(); 
-    closeModal('history-modal'); 
-    syncToCloud();
+    staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: monto, type: 'AGUINALDO', desc: desc, img: "" , metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: new Date(f + "T00:00:00").toISOString(), hasta: new Date(t + "T23:59:59").toISOString(), totalSueldoPuro: totalS, porcentaje: percent } }); 
+    saveStaff(); renderStaff(); closeModal('history-modal'); syncToCloud();
 }
 
 function updateStaffRate(i) { openModal("Ajustar Tarifa", `<div style="text-align:center;"><p>Nueva tarifa por hora para <b>${staff[i].name}</b></p><input type="text" id="new-rate-val" placeholder="₡ Tarifa" oninput="formatCurrencyInput(this)" inputmode="decimal"><button class="btn btn-in" onclick="saveNewRate(${i})">GUARDAR TARIFA</button></div>`); }
@@ -1620,355 +1464,101 @@ function saveNewRate(i) { const val = cleanAmount(document.getElementById('new-r
 function addStaff() { const n = document.getElementById('staff-name').value, r = cleanAmount(document.getElementById('staff-rate').value); if(!n || !r) return; staff.unshift({ name: n, rate: r, debt: 0, shifts: [], useExtras: true, activeIn: "", isOpen: true }); saveStaff(); renderStaff(); document.getElementById('staff-name').value = ""; document.getElementById('staff-rate').value = ""; syncToCloud(); }
 function deleteStaff(i) { showConfirm(`¿Deseas eliminar permanentemente a <b>${staff[i].name}</b> de la planilla?`, () => { staff.splice(i, 1); saveStaff(); renderStaff(); syncToCloud(); }); }
 
-function checkPeriodStaff(i) {
-    openModal(`Consultar Periodo: ${staff[i].name}`, `<div class="form-box" style="background:transparent; border:none; padding:0;">
-        <label class="input-label">Desde</label>
-        <input type="date" id="staff-query-from">
-        <label class="input-label">Hasta</label>
-        <input type="date" id="staff-query-to">
-        <button class="btn btn-in" onclick="executeStaffPeriodQuery(${i})">GENERAR INFORME</button>
-    </div>`);
-}
-
+function checkPeriodStaff(i) { openModal(`Consultar Periodo: ${staff[i].name}`, `<div class="form-box" style="background:transparent; border:none; padding:0;"><label class="input-label">Desde</label><input type="date" id="staff-query-from"><label class="input-label">Hasta</label><input type="date" id="staff-query-to"><button class="btn btn-in" onclick="executeStaffPeriodQuery(${i})">GENERAR INFORME</button></div>`); }
 function executeStaffPeriodQuery(i) {
     const fV = document.getElementById('staff-query-from').value, tV = document.getElementById('staff-query-to').value;
     if(!fV || !tV) return showMsg("Por favor, ingrese ambas fechas.");
     const f = new Date(fV + "T00:00:00").getTime(), t = new Date(tV + "T23:59:59").getTime();
-    
     let totalDevengado = 0, ordHoras = 0, extHoras = 0, adelantos = 0;
-    if(staff[i].shifts) {
-        staff[i].shifts.forEach(sh => {
-            const shD = new Date(sh.date).getTime();
-            if(shD >= f && shD <= t) {
-                if(sh.type === 'SHIFT') { ordHoras += sh.ord; extHoras += sh.ext; totalDevengado += sh.earned; }
-                else if(sh.type === 'ADVANCE') { adelantos += Math.abs(sh.earned); }
-                else if(sh.type === 'AGUINALDO') { totalDevengado += sh.earned; }
-            }
-        });
-    }
-
-    let resHtml = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4;">
-        <p><b>Empleado:</b> ${staff[i].name}</p>
-        <p><b>Rango:</b> <small class="adj-color">${formatDateSlash(fV)} al ${formatDateSlash(tV)}</small></p>
-        <hr style="border:1px solid #222; margin:10px 0;">
-        <p><b>Horas Ordinarias:</b> ${ordHoras.toFixed(1)} h</p>
-        <p><b>Horas Extra:</b> ${extHoras.toFixed(1)} h</p>
-        <p class="profit"><b>Total Bruto Acumulado:</b> ₡${formatVisual(totalDevengado)}</p>
-        <p class="expense"><b>Adelantos en Rango:</b> ₡${formatVisual(adelantos)}</p>
-        <hr style="border:1px dashed #333; margin:10px 0;">
-        <h3 class="profit" style="text-align:center; font-size:1.1rem; margin:0;">Monto Neto Sugerido: ₡${formatVisual(totalDevengado - adelantos)}</h3>
-    </div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal')">CERRAR</button>`;
-    
+    if(staff[i].shifts) { staff[i].shifts.forEach(sh => { const shD = new Date(sh.date).getTime(); if(shD >= f && shD <= t) { if(sh.type === 'SHIFT') { ordHoras += sh.ord; extHoras += sh.ext; totalDevengado += sh.earned; } else if(sh.type === 'ADVANCE') { adelantos += Math.abs(sh.earned); } else if(sh.type === 'AGUINALDO') { totalDevengado += sh.earned; } } }); }
+    let resHtml = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4;"><p><b>Empleado:</b> ${staff[i].name}</p><p><b>Rango:</b> <small class="adj-color">${formatDateSlash(fV)} al ${formatDateSlash(tV)}</small></p><hr style="border:1px solid #222; margin:10px 0;"><p><b>Horas Ordinarias:</b> ${ordHoras.toFixed(1)} h</p><p><b>Horas Extra:</b> ${extHoras.toFixed(1)} h</p><p class="profit"><b>Total Bruto Acumulado:</b> ₡${formatVisual(totalDevengado)}</p><p class="expense"><b>Adelantos en Rango:</b> ₡${formatVisual(adelantos)}</p><hr style="border:1px dashed #333; margin:10px 0;"><h3 class="profit" style="text-align:center; font-size:1.1rem; margin:0;">Monto Neto Sugerido: ₡${formatVisual(totalDevengado - adelantos)}</h3></div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal')">CERRAR</button>`;
     openModal(`Informe: ${staff[i].name}`, resHtml);
 }
 
 function executeGlobalStaffQuery() {
     const fV = document.getElementById('global-staff-from').value, tV = document.getElementById('global-staff-to').value;
-    if(!fV || !tV) return showMsg("Por favor, ingrese ambas fechas para el informe maestro.");
+    if(!fV || !tV) return showMsg("Por favor, ingrese ambas fechas.");
     const f = new Date(fV + "T00:00:00").getTime(), t = new Date(tV + "T23:59:59").getTime();
-
-    let totalG_Ord = 0, totalG_Ext = 0, totalG_Bruto = 0, totalG_Adelantos = 0, totalG_Liquidado = 0;
-    let tablaCuerpoHtml = "";
-
+    let totalG_Ord = 0, totalG_Ext = 0, totalG_Bruto = 0, totalG_Adelantos = 0, totalG_Liquidado = 0; let tablaCuerpoHtml = "";
     staff.forEach(s => {
-        let empOrd = 0, empExt = 0, empBruto = 0, empAdelantos = 0, empLiquidado = 0;
-        let registroActivo = false;
-
-        if(s.shifts) {
-            s.shifts.forEach(sh => {
-                const shDate = new Date(sh.date).getTime();
-                if(shDate >= f && shDate <= t) {
-                    registroActivo = true;
-                    if(sh.type === 'SHIFT') {
-                        empOrd += sh.ord;
-                        empExt += sh.ext;
-                        empBruto += sh.earned;
-                    } else if(sh.type === 'ADVANCE') {
-                        empAdelantos += Math.abs(sh.earned);
-                    } else if(sh.type === 'AGUINALDO') {
-                        empBruto += sh.earned; 
-                    } else if(sh.type === 'PAYMENT_SUELDO' || sh.type === 'PAYMENT_AGUINALDO') {
-                        empLiquidado += Math.abs(sh.earned);
-                    }
-                }
-            });
-        }
-
-        if(registroActivo) {
-            totalG_Ord += empOrd; totalG_Ext += empExt; totalG_Bruto += empBruto; 
-            totalG_Adelantos += empAdelantos; totalG_Liquidado += empLiquidado;
-
-            tablaCuerpoHtml += `<tr>
-                <td><b>${s.name}</b></td>
-                <td style="text-align:center;">${empOrd.toFixed(1)}h / ${empExt.toFixed(1)}h</td>
-                <td class="profit" style="text-align:right;">₡${formatVisual(empBruto)}</td>
-                <td class="expense" style="text-align:right;">₡${formatVisual(empAdelantos)}</td>
-                <td class="adj-color" style="text-align:right;">₡${formatVisual(empLiquidado)}</td>
-            </tr>`;
-        }
+        let empOrd = 0, empExt = 0, empBruto = 0, empAdelantos = 0, empLiquidado = 0; let registroActivo = false;
+        if(s.shifts) { s.shifts.forEach(sh => { const shDate = new Date(sh.date).getTime(); if(shDate >= f && shDate <= t) { registroActivo = true; if(sh.type === 'SHIFT') { empOrd += sh.ord; empExt += sh.ext; empBruto += sh.earned; } else if(sh.type === 'ADVANCE') { empAdelantos += Math.abs(sh.earned); } else if(sh.type === 'AGUINALDO') { empBruto += sh.earned; } else if(sh.type === 'PAYMENT_SUELDO' || sh.type === 'PAYMENT_AGUINALDO') { empLiquidado += Math.abs(sh.earned); } } }); }
+        if(registroActivo) { totalG_Ord += empOrd; totalG_Ext += empExt; totalG_Bruto += empBruto; totalG_Adelantos += empAdelantos; totalG_Liquidado += empLiquidado; tablaCuerpoHtml += `<tr><td><b>${s.name}</b></td><td style="text-align:center;">${empOrd.toFixed(1)}h / ${empExt.toFixed(1)}h</td><td class="profit" style="text-align:right;">₡${formatVisual(empBruto)}</td><td class="expense" style="text-align:right;">₡${formatVisual(empAdelantos)}</td><td class="adj-color" style="text-align:right;">₡${formatVisual(empLiquidado)}</td></tr>`; }
     });
-
-    if(tablaCuerpoHtml === "") {
-        tablaCuerpoHtml = `<tr><td colspan="5" style="text-align:center; color:#666; padding:15px;">Ningún colaborador registra activity en este rango.</td></tr>`;
-    }
-
-    let globalReportTemplate = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4; margin-bottom:15px;">
-        <p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Rango Planilla Consolidada:</b> <br><small class="adj-color">${formatDateSlash(fV)} al ${formatDateSlash(tV)}</small></p>
-        <hr style="border:1px solid #222; margin:10px 0;">
-        <p><b>Total Horas Ord. Laboradas:</b> ${totalG_Ord.toFixed(1)} h</p>
-        <p><b>Total Horas Ext. Laboradas:</b> ${totalG_Ext.toFixed(1)} h</p>
-        <p class="profit"><b>Total Bruto Acumulado:</b> ₡${formatVisual(totalG_Bruto)}</p>
-        <p class="expense"><b>Total Adelantos Otorgados:</b> ₡${formatVisual(totalG_Adelantos)}</p>
-        <p class="adj-color"><b>Total Efectivamente Pagado:</b> ₡${formatVisual(totalG_Liquidado)}</p>
-    </div>
-    <div class="history-wrapper">
-        <table style="width:100%;">
-            <thead>
-                <tr>
-                    <th>Empleado</th>
-                    <th style="text-align:center;">Ord/Ext</th>
-                    <th style="text-align:right;">Bruto</th>
-                    <th style="text-align:right;">Adelant.</th>
-                    <th style="text-align:right;">Pagado</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tablaCuerpoHtml}
-            </tbody>
-        </table>
-    </div>
-    <button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal')">CERRAR INFORME MAESTRO</button>`;
-
+    if(tablaCuerpoHtml === "") tablaCuerpoHtml = `<tr><td colspan="5" style="text-align:center; color:#666; padding:15px;">Ningún colaborador registra activity.</td></tr>`;
+    let globalReportTemplate = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left; font-size:0.85rem; line-height:1.4; margin-bottom:15px;"><p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Rango:</b> <br><small class="adj-color">${formatDateSlash(fV)} al ${formatDateSlash(tV)}</small></p><hr style="border:1px solid #222; margin:10px 0;"><p><b>Total Horas Ord:</b> ${totalG_Ord.toFixed(1)} h</p><p><b>Total Horas Ext:</b> ${totalG_Ext.toFixed(1)} h</p><p class="profit"><b>Total Bruto:</b> ₡${formatVisual(totalG_Bruto)}</p><p class="expense"><b>Total Adelantos:</b> ₡${formatVisual(totalG_Adelantos)}</p><p class="adj-color"><b>Total Pagado:</b> ₡${formatVisual(totalG_Liquidado)}</p></div><div class="history-wrapper"><table style="width:100%;"><thead><tr><th>Empleado</th><th style="text-align:center;">Ord/Ext</th><th style="text-align:right;">Bruto</th><th style="text-align:right;">Adelant.</th><th style="text-align:right;">Pagado</th></tr></thead><tbody>${tablaCuerpoHtml}</tbody></table></div><button class="btn btn-pay" style="margin-top:15px; width:100%; color:white;" onclick="closeModal('history-modal')">CERRAR INFORME MAESTRO</button>`;
     openModal("Informe Maestro de Sueldos", globalReportTemplate);
 }
 
-function confirmFullReset() {
-    showConfirmCustomDanger("⚠️ <b>¡ALERTA CRÍTICA DE BORRADO!</b><br><br>Esta acción eliminará de forma irreversible toda la base de datos de Gestión Total (Contabilidad, Flujos de Caja, Planillas e Historiales).<br><br>¿Realmente deseas continuar?");
-}
+function confirmFullReset() { showConfirmCustomDanger("⚠️ <b>¡ALERTA CRÍTICA DE BORRADO!</b><br><br>Esta acción eliminará de forma irreversible toda la base de datos de Gestión Total (Contabilidad, Flujos de Caja, Planillas e Historiales).<br><br>¿Realmente deseas continuar?"); }
 
 function showConfirmCustomDanger(msg) {
-    const dialogWrapper = document.getElementById('custom-dialog-wrapper');
-    dialogWrapper.style.borderColor = "#ff3b3b";
-    dialogWrapper.style.boxShadow = "0 0 25px rgba(255, 59, 59, 0.3)";
-    
-    document.getElementById('dialog-title').innerText = "BORRADO TOTAL";
-    document.getElementById('dialog-title').style.color = "#ff3b3b";
-    document.getElementById('dialog-msg').innerHTML = msg; 
-    
-    document.getElementById('dialog-buttons').innerHTML = `
-        <button class="btn btn-grey" style="flex:1; margin:0;" onclick="closeDialogResetStyles()">CANCELAR</button>
-        <button class="btn btn-out" style="flex:1; margin:0;" onclick="openSecurePinPrompt()">SÍ, CONTINUAR</button>
-    `; 
-    document.getElementById('custom-dialog').style.display = 'flex'; 
-    updateBodyScroll();
+    const dialogWrapper = document.getElementById('custom-dialog-wrapper'); dialogWrapper.style.borderColor = "#ff3b3b"; dialogWrapper.style.boxShadow = "0 0 25px rgba(255, 59, 59, 0.3)";
+    document.getElementById('dialog-title').innerText = "BORRADO TOTAL"; document.getElementById('dialog-title').style.color = "#ff3b3b"; document.getElementById('dialog-msg').innerHTML = msg; 
+    document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-grey" style="flex:1; margin:0;" onclick="closeDialogResetStyles()">CANCELAR</button><button class="btn btn-out" style="flex:1; margin:0;" onclick="openSecurePinPrompt()">SÍ, CONTINUAR</button>`; 
+    document.getElementById('custom-dialog').style.display = 'flex'; updateBodyScroll();
 }
 
 function openSecurePinPrompt() {
-    const dialogWrapper = document.getElementById('custom-dialog-wrapper');
-    dialogWrapper.style.borderColor = "#ff3b3b";
-    
-    document.getElementById('dialog-title').innerText = "VERIFICAR IDENTIDAD";
-    document.getElementById('dialog-title').style.color = "#ff3b3b";
-    
-    document.getElementById('dialog-msg').innerHTML = `
-        <p style="font-size:0.85rem; margin-bottom:15px; color:#aaa;">Ingrese el PIN de seguridad de 4 dígitos para autorizar la destrucción de datos:</p>
-        <input type="password" id="secure-clear-pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric" style="margin-bottom:5px; border-color:#552222; background:#0a0505;">
-    `;
-    
-    document.getElementById('dialog-buttons').innerHTML = `
-        <button class="btn btn-grey" style="flex:1; margin:0;" onclick="closeDialogResetStyles()">ABORTAR</button>
-        <button class="btn btn-out" style="flex:1; margin:0;" onclick="processSecureSystemClear()">CONFIRMAR PURGA</button>
-    `;
-    
-    setTimeout(() => {
-        const input = document.getElementById('secure-clear-pin');
-        if(input) input.focus();
-    }, 50);
+    const dialogWrapper = document.getElementById('custom-dialog-wrapper'); dialogWrapper.style.borderColor = "#ff3b3b"; document.getElementById('dialog-title').innerText = "VERIFICAR IDENTIDAD"; document.getElementById('dialog-title').style.color = "#ff3b3b";
+    document.getElementById('dialog-msg').innerHTML = `<p style="font-size:0.85rem; margin-bottom:15px; color:#aaa;">Ingrese el PIN de seguridad de 4 dígitos para autorizar la destrucción de datos:</p><input type="password" id="secure-clear-pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric" style="margin-bottom:5px; border-color:#552222; background:#0a0505;">`;
+    document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-grey" style="flex:1; margin:0;" onclick="closeDialogResetStyles()">ABORTAR</button><button class="btn btn-out" style="flex:1; margin:0;" onclick="processSecureSystemClear()">CONFIRMAR PURGA</button>`;
+    setTimeout(() => { const input = document.getElementById('secure-clear-pin'); if(input) input.focus(); }, 50);
 }
 
 function processSecureSystemClear() {
-    const pInput = document.getElementById('secure-clear-pin');
-    if (!pInput) return;
-    const p = pInput.value;
-    if (!p) return;
-    
-    let hashed = hashPin(p);
-    const storedRawPin = localStorage.getItem('copo_raw_pin');
-    
-    if (p === "1234" || hashed === secure_pin_hash || (storedRawPin && p === storedRawPin)) {
-        localStorage.clear();
-        closeDialogResetStyles();
-        showMsg("Base de datos purgada. El sistema se reiniciará de fábrica...");
-        setTimeout(() => { location.reload(); }, 1500);
-    } else {
-        const dialogWrapper = document.getElementById('custom-dialog-wrapper');
-        dialogWrapper.style.borderColor = "#ff3b3b";
-        document.getElementById('dialog-title').innerText = "ERROR DE PIN";
-        document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operation fue denegada.";
-        document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-out" style="width:100%; margin:0;" onclick="closeDialogResetStyles()">ENTENDIDO</button>`;
-    }
+    const pInput = document.getElementById('secure-clear-pin'); if (!pInput) return; const p = pInput.value; if (!p) return;
+    let hashed = hashPin(p); const storedRawPin = localStorage.getItem('copo_raw_pin');
+    if (p === "1234" || hashed === secure_pin_hash || (storedRawPin && p === storedRawPin)) { localStorage.clear(); closeDialogResetStyles(); showMsg("Base de datos purgada. El sistema se reiniciará de fábrica..."); setTimeout(() => { location.reload(); }, 1500); } 
+    else { const dialogWrapper = document.getElementById('custom-dialog-wrapper'); dialogWrapper.style.borderColor = "#ff3b3b"; document.getElementById('dialog-title').innerText = "ERROR DE PIN"; document.getElementById('dialog-msg').innerText = "El PIN ingresado es incorrecto. La operation fue denegada."; document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-out" style="width:100%; margin:0;" onclick="closeDialogResetStyles()">ENTENDIDO</button>`; }
 }
 
-function closeDialogResetStyles() {
-    const dialogWrapper = document.getElementById('custom-dialog-wrapper');
-    dialogWrapper.style.borderColor = "#333";
-    dialogWrapper.style.boxShadow = "none";
-    document.getElementById('dialog-title').style.color = "white";
-    closeDialog();
-}
+function closeDialogResetStyles() { const dialogWrapper = document.getElementById('custom-dialog-wrapper'); dialogWrapper.style.borderColor = "#333"; dialogWrapper.style.boxShadow = "none"; document.getElementById('dialog-title').style.color = "white"; closeDialog(); }
 
-function saveTagsToStorage() {
-    localStorage.setItem('copo_tags', JSON.stringify(savedTags));
-}
-
-function toggleTagsDropdown(event) {
-    event.stopPropagation();
-    const dropdown = document.getElementById('tags-dropdown');
-    if (dropdown.style.display === 'block') {
-        dropdown.style.display = 'none';
-    } else {
-        renderTagsOptions(document.getElementById('desc').value.trim(), true);
-    }
-}
-
-function onDescTagInput(input) {
-    if (input.value === "") {
-        document.getElementById('tags-dropdown').style.display = 'none';
-        return;
-    }
-    renderTagsOptions(input.value.trim(), false);
-}
+function saveTagsToStorage() { localStorage.setItem('copo_tags', JSON.stringify(savedTags)); }
+function toggleTagsDropdown(event) { event.stopPropagation(); const dropdown = document.getElementById('tags-dropdown'); if (dropdown.style.display === 'block') { dropdown.style.display = 'none'; } else { renderTagsOptions(document.getElementById('desc').value.trim(), true); } }
+function onDescTagInput(input) { if (input.value === "") { document.getElementById('tags-dropdown').style.display = 'none'; return; } renderTagsOptions(input.value.trim(), false); }
 
 function renderTagsOptions(typedText, forceShowAll = false) {
-    const dropdown = document.getElementById('tags-dropdown');
-    dropdown.innerHTML = "";
-    
-    let matchedTags = [];
-    if (forceShowAll || !typedText) {
-        matchedTags = [...savedTags];
-    } else {
-        matchedTags = savedTags.filter(t => t.toLowerCase().includes(typedText.toLowerCase()));
-    }
-    
+    const dropdown = document.getElementById('tags-dropdown'); dropdown.innerHTML = "";
+    let matchedTags = []; if (forceShowAll || !typedText) { matchedTags = [...savedTags]; } else { matchedTags = savedTags.filter(t => t.toLowerCase().includes(typedText.toLowerCase())); }
     matchedTags.forEach(tag => {
-        const item = document.createElement('div');
-        item.className = 'tags-item';
-        
-        const textSpan = document.createElement('span');
-        textSpan.style.flex = "1";
-        textSpan.style.display = "flex";
-        textSpan.style.alignItems = "center";
-        textSpan.innerHTML = `<i class="fas fa-tag" style="color: #0026ff; margin-right: 8px;"></i>${tag}`;
-        textSpan.onclick = () => selectTagOption(tag);
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.style.background = 'none';
-        removeBtn.style.border = 'none';
-        removeBtn.style.color = '#ff3b3b';
-        removeBtn.style.cursor = 'pointer';
-        removeBtn.style.padding = '4px 8px';
-        removeBtn.style.outline = 'none';
-        removeBtn.innerHTML = `<i class="fas fa-trash-alt"></i>`;
-        removeBtn.onclick = (e) => removeTagOption(e, tag);
-        
-        item.appendChild(textSpan);
-        item.appendChild(removeBtn);
-        dropdown.appendChild(item);
+        const item = document.createElement('div'); item.className = 'tags-item';
+        const textSpan = document.createElement('span'); textSpan.style.flex = "1"; textSpan.style.display = "flex"; textSpan.style.alignItems = "center"; textSpan.innerHTML = `<i class="fas fa-tag" style="color: #0026ff; margin-right: 8px;"></i>${tag}`; textSpan.onclick = () => selectTagOption(tag);
+        const removeBtn = document.createElement('button'); removeBtn.type = 'button'; removeBtn.style.background = 'none'; removeBtn.style.border = 'none'; removeBtn.style.color = '#ff3b3b'; removeBtn.style.cursor = 'pointer'; removeBtn.style.padding = '4px 8px'; removeBtn.style.outline = 'none'; removeBtn.innerHTML = `<i class="fas fa-trash-alt"></i>`; removeBtn.onclick = (e) => removeTagOption(e, tag);
+        item.appendChild(textSpan); item.appendChild(removeBtn); dropdown.appendChild(item);
     });
-    
     if (typedText && !savedTags.some(t => t.toLowerCase() === typedText.toLowerCase())) {
-        const addItem = document.createElement('div');
-        addItem.className = 'tags-item tags-add-btn';
-        addItem.innerHTML = `<span><i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Agregar "${typedText}" como etiqueta</span>`;
-        addItem.onclick = () => addNewTagOption(typedText);
-        dropdown.appendChild(addItem);
+        const addItem = document.createElement('div'); addItem.className = 'tags-item tags-add-btn'; addItem.innerHTML = `<span><i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Agregar "${typedText}" como etiqueta</span>`; addItem.onclick = () => addNewTagOption(typedText); dropdown.appendChild(addItem);
     }
-    
-    if (dropdown.children.length > 0) {
-        dropdown.style.display = 'block';
-    } else {
-        dropdown.style.display = 'none';
-    }
+    if (dropdown.children.length > 0) { dropdown.style.display = 'block'; } else { dropdown.style.display = 'none'; }
 }
 
-function removeTagOption(event, tag) {
-    event.stopPropagation(); 
-    showConfirm(`¿Deseas eliminar permanentemente la etiqueta "<b>${tag}</b>"?`, () => {
-        savedTags = savedTags.filter(t => t !== tag);
-        saveTagsToStorage();
-        const descInp = document.getElementById('desc');
-        const currentVal = descInp ? descInp.value.trim() : "";
-        renderTagsOptions(currentVal, !currentVal);
-        syncToCloud();
-    });
-}
+function removeTagOption(event, tag) { event.stopPropagation(); showConfirm(`¿Deseas eliminar permanentemente la etiqueta "<b>${tag}</b>"?`, () => { savedTags = savedTags.filter(t => t !== tag); saveTagsToStorage(); const descInp = document.getElementById('desc'); const currentVal = descInp ? descInp.value.trim() : ""; renderTagsOptions(currentVal, !currentVal); syncToCloud(); }); }
+function selectTagOption(tag) { document.getElementById('desc').value = tag; document.getElementById('tags-dropdown').style.display = 'none'; }
+function addNewTagOption(tag) { const cleanTag = tag.trim(); if (cleanTag && !savedTags.some(t => t.toLowerCase() === cleanTag.toLowerCase())) { savedTags.push(cleanTag); saveTagsToStorage(); showMsg(`Etiqueta "${cleanTag}" guardada con éxito.`); syncToCloud(); } selectTagOption(cleanTag); }
 
-function selectTagOption(tag) {
-    document.getElementById('desc').value = tag;
-    document.getElementById('tags-dropdown').style.display = 'none';
-}
-
-function addNewTagOption(tag) {
-    const cleanTag = tag.trim();
-    if (cleanTag && !savedTags.some(t => t.toLowerCase() === cleanTag.toLowerCase())) {
-        savedTags.push(cleanTag);
-        saveTagsToStorage();
-        showMsg(`Etiqueta "${cleanTag}" guardada con éxito.`);
-        syncToCloud();
-    }
-    selectTagOption(cleanTag);
-}
-
-function updateBodyScroll() {
-    const anyOpen = Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'flex');
-    if(anyOpen) document.body.classList.add('modal-open');
-    else document.body.classList.remove('modal-open');
-}
-
+function updateBodyScroll() { const anyOpen = Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'flex'); if(anyOpen) document.body.classList.add('modal-open'); else document.body.classList.remove('modal-open'); }
 function openModal(t, c) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-content').innerHTML = c; document.getElementById('history-modal').style.display = 'flex'; updateBodyScroll(); }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; updateBodyScroll(); }
 
 function zoomImage(s, id = null, staffIdx = null) { 
-    currentZoomedId = id; 
-    currentZoomedStaffIdx = staffIdx; 
-    let displaySrc = s;
-    if (displaySrc && displaySrc.includes("drive.google.com")) {
-        let idMatch = displaySrc.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || displaySrc.match(/id=([a-zA-Z0-9_-]+)/);
-        if (idMatch && idMatch[1]) {
-            displaySrc = `https://docs.google.com/uc?export=download&id=${idMatch[1]}`;
-        }
-    }
-    
-    const imgEl = document.getElementById('imgZoom');
-    const cloudCont = document.getElementById('cloud-img-container');
-    const openBtn = document.getElementById('btnOpenExternalDrive');
-    
-    if (s.startsWith("http")) {
-        if (imgEl) imgEl.style.display = 'none';
-        if (cloudCont) cloudCont.style.display = 'block';
-        if (openBtn) {
-            openBtn.onclick = function() { window.open(s, '_blank'); };
-        }
-    } else {
-        if (cloudCont) cloudCont.style.display = 'none';
-        if (imgEl) {
-            imgEl.style.display = 'block';
-            imgEl.src = displaySrc;
-        }
-    }
-    document.getElementById('imgModal').style.display = 'flex'; 
-    updateBodyScroll(); 
+    currentZoomedId = id; currentZoomedStaffIdx = staffIdx; let displaySrc = s;
+    if (displaySrc && displaySrc.includes("drive.google.com")) { let idMatch = displaySrc.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || displaySrc.match(/id=([a-zA-Z0-9_-]+)/); if (idMatch && idMatch[1]) { displaySrc = `https://docs.google.com/uc?export=download&id=${idMatch[1]}`; } }
+    const imgEl = document.getElementById('imgZoom'); const cloudCont = document.getElementById('cloud-img-container'); const openBtn = document.getElementById('btnOpenExternalDrive');
+    if (s.startsWith("http")) { if (imgEl) imgEl.style.display = 'none'; if (cloudCont) cloudCont.style.display = 'block'; if (openBtn) { openBtn.onclick = function() { window.open(s, '_blank'); }; } } 
+    else { if (cloudCont) cloudCont.style.display = 'none'; if (imgEl) { imgEl.style.display = 'block'; imgEl.src = displaySrc; } }
+    document.getElementById('imgModal').style.display = 'flex'; updateBodyScroll(); 
 }
 
 function deleteCurrentZoomedImage() {
     if (!currentZoomedId) return;
-    showConfirm("¿Deseas eliminar la foto de este registro permanentemente?", () => {
+    showConfirm("¿Deseas eliminar permanentemente esta foto?", async () => {
         if (currentZoomedId === 'LOGO') {
-            bizData.logo = "";
-            localStorage.setItem('copo_biz_data', JSON.stringify(bizData));
-            applyBusinessIdentity();
-            syncToCloud();
+            if (bizData.logoDriveId && gapiInited && gapi.client.getToken()) {
+                try { await gapi.client.drive.files.delete({ fileId: bizData.logoDriveId }); } catch(e){ console.error(e); }
+            }
+            bizData.logo = ""; bizData.logoDriveId = ""; localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); applyBusinessIdentity(); syncToCloud();
         } else if (currentZoomedStaffIdx !== null) {
             const sIdx = currentZoomedStaffIdx; const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === currentZoomedId);
             if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = ""; saveStaff(); renderStaff(); syncToCloud(); }
@@ -1980,35 +1570,14 @@ function deleteCurrentZoomedImage() {
     });
 }
 
-window.clearMovementImage = function(id) {
-    const mIdx = movements.findIndex(m => m.id === id);
-    if (mIdx !== -1) {
-        movements[mIdx].img = "";
-        localStorage.setItem('copo_data', JSON.stringify(movements));
-        closeModal('history-modal');
-        updateUI();
-        syncToCloud();
-        showMsg("Enlace de factura limpiado de forma segura.");
-    }
-};
-
+window.clearMovementImage = function(id) { const mIdx = movements.findIndex(m => m.id === id); if (mIdx !== -1) { movements[mIdx].img = ""; localStorage.setItem('copo_data', JSON.stringify(movements)); closeModal('history-modal'); updateUI(); syncToCloud(); showMsg("Enlace de factura limpiado de forma segura."); } };
 function showMsg(msg) { document.getElementById('dialog-title').innerText = "Aviso"; document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-pay" style="color:white;" onclick="closeDialog()">OK</button>`; document.getElementById('custom-dialog').style.display = 'flex'; updateBodyScroll(); }
-
-function showConfirm(msg, onConfirm) { 
-    document.getElementById('dialog-title').innerText = "Confirmar"; document.getElementById('dialog-msg').innerHTML = msg; 
-    document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-pay" style="flex:1; color:white;" onclick="closeDialog()">NO</button><button class="btn btn-in" style="flex:1" onclick="executeConfirmAction()">SÍ</button>`; 
-    window.pendingAction = onConfirm; document.getElementById('custom-dialog').style.display = 'flex'; updateBodyScroll(); 
-}
-function executeConfirmAction() { 
-    if (typeof window.pendingAction === 'function') { 
-        window.pendingAction(); 
-    } 
-    closeDialog(); 
-}
+function showConfirm(msg, onConfirm) { document.getElementById('dialog-title').innerText = "Confirmar"; document.getElementById('dialog-msg').innerHTML = msg; document.getElementById('dialog-buttons').innerHTML = `<button class="btn btn-pay" style="flex:1; color:white;" onclick="closeDialog()">NO</button><button class="btn btn-in" style="flex:1" onclick="executeConfirmAction()">SÍ</button>`; window.pendingAction = onConfirm; document.getElementById('custom-dialog').style.display = 'flex'; updateBodyScroll(); }
+function executeConfirmAction() { if (typeof window.pendingAction === 'function') { window.pendingAction(); } closeDialog(); }
 function closeDialog() { document.getElementById('custom-dialog').style.display = 'none'; updateBodyScroll(); }
 
 function openTrashModal() {
-    if (trashMovements.length === 0) return showMsg("La papelera de reciclaje está completamente vacía.");
+    if (trashMovements.length === 0) return showMsg("La papelera de reciclaje está vacía.");
     let html = `<div class="history-wrapper" style="max-height: 350px;"><table><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>`;
     trashMovements.forEach(m => {
         let isCap = m.type === 'CAP_BASE'; let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE') ? m.amount : -m.amount;
@@ -2019,30 +1588,10 @@ function openTrashModal() {
     openModal("Papelera de Reciclaje", html + "</tbody></table></div>");
 }
 
-function restoreMovement(id) {
-    const idx = trashMovements.findIndex(m => m.id === id);
-    if (idx !== -1) { const item = trashMovements.splice(idx, 1)[0]; movements.unshift(item); localStorage.setItem('copo_data', JSON.stringify(movements)); localStorage.setItem('copo_trash', JSON.stringify(trashMovements)); updateUI(); closeModal('history-modal'); syncToCloud(); }
-}
+function restoreMovement(id) { const idx = trashMovements.findIndex(m => m.id === id); if (idx !== -1) { const item = trashMovements.splice(idx, 1)[0]; movements.unshift(item); localStorage.setItem('copo_data', JSON.stringify(movements)); localStorage.setItem('copo_trash', JSON.stringify(trashMovements)); updateUI(); closeModal('history-modal'); syncToCloud(); } }
 function permanentlyDeleteMovement(id) { showConfirm("¿Deseas eliminar permanentemente este registro?", () => { trashMovements = trashMovements.filter(m => m.id !== id); localStorage.setItem('copo_trash', JSON.stringify(trashMovements)); closeModal('history-modal'); }); }
-
-function formatCurrencyInput(input) { 
-    let value = input.value.replace(/[^0-9,]/g, ""); const parts = value.split(','); 
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "."); input.value = parts.length > 1 ? parts[0] + ',' + parts[1].slice(0,2) : parts[0]; 
-}
-
-function deleteMovement(id) { 
-    showConfirm("¿Deseas enviar este movimiento a la papelera de reciclaje?", () => { 
-        const matchIdx = movements.findIndex(m => m.id === id);
-        if (matchIdx !== -1) {
-            const trashedItem = movements.splice(matchIdx, 1)[0];
-            trashMovements.unshift(trashedItem);
-            localStorage.setItem('copo_data', JSON.stringify(movements));
-            localStorage.setItem('copo_trash', JSON.stringify(trashMovements));
-            updateUI(); 
-            syncToCloud();
-        }
-    }); 
-}
+function formatCurrencyInput(input) { let value = input.value.replace(/[^0-9,]/g, ""); const parts = value.split(','); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "."); input.value = parts.length > 1 ? parts[0] + ',' + parts[1].slice(0,2) : parts[0]; }
+function deleteMovement(id) { showConfirm("¿Deseas enviar este movimiento a la papelera?", () => { const matchIdx = movements.findIndex(m => m.id === id); if (matchIdx !== -1) { const trashedItem = movements.splice(matchIdx, 1)[0]; trashMovements.unshift(trashedItem); localStorage.setItem('copo_data', JSON.stringify(movements)); localStorage.setItem('copo_trash', JSON.stringify(trashMovements)); updateUI(); syncToCloud(); } }); }
 
 function editMovement(id) {
     const m = movements.find(x => x.id === id); if(!m) return;
@@ -2050,9 +1599,7 @@ function editMovement(id) {
     const isMuro = m.type === 'CAP_BASE';
     let html = `<div class="form-box" style="background:transparent; border:none; padding:0;"><label class="input-label">Monto</label><input type="text" id="edit-amt" value="${formatVisual(m.amount)}" oninput="formatCurrencyInput(this)" inputmode="decimal"><label class="input-label">Detalle</label><input type="text" id="edit-dsc" value="${m.desc}">`;
 
-    if (m.img) {
-        html += `<button class="btn btn-out" onclick="clearMovementImage(${id})" style="padding:10px; font-size:0.75rem; margin-bottom:12px; background:#ff3b3b; color:white; width:100%; border:none; border-radius:8px; font-weight:bold; cursor:pointer;"><i class="fas fa-image-slash"></i> QUITAR FACTURA ADJUNTA</button>`;
-    }
+    if (m.img) { html += `<button class="btn btn-out" onclick="clearMovementImage(${id})" style="padding:10px; font-size:0.75rem; margin-bottom:12px; background:#ff3b3b; color:white; width:100%; border:none; border-radius:8px; font-weight:bold; cursor:pointer;"><i class="fas fa-image-slash"></i> QUITAR FACTURA ADJUNTA</button>`; }
 
     if (isMuro) { html += `<input type="hidden" id="edit-date" value="${localISO}"><input type="hidden" id="temp-method" value="${m.method}"><input type="hidden" id="temp-dir" value="IN"><input type="hidden" id="is-adj-orig" value="true"><input type="hidden" id="orig-type" value="CAP_BASE">`; } 
     else {
@@ -2066,13 +1613,7 @@ function editMovement(id) {
                 <button class="btn ${m.type === 'OUT' || m.type === 'ADJ_OUT' ? 'btn-out' : 'btn-pay'}" onclick="document.getElementById('temp-dir').value='OUT'; updateEditTypeUI(this)" style="padding:10px; font-size:0.7rem; color:white;">📤 EGRESO / SALIDA</button>
             </div><input type="hidden" id="temp-dir" value="${m.type.includes('IN') || m.type === 'CREDIT_PENDING' ? 'IN' : 'OUT'}"><input type="hidden" id="is-adj-orig" value="${m.type.startsWith('ADJ_') ? 'true' : 'false'}"><input type="hidden" id="orig-type" value="${m.type}">`;
             
-        html += `<div class="toggle-box" style="margin-bottom:12px; background:#000;">
-            <span>AFECTAR CUADROS ACTIVOS</span>
-            <label class="switch">
-                <input type="checkbox" id="edit-affect-profit" ${(m.affectProfit === undefined || m.affectProfit) ? 'checked' : ''}>
-                <span class="slider"></span>
-            </label>
-        </div>`;
+        html += `<div class="toggle-box" style="margin-bottom:12px; background:#000;"><span>AFECTAR CUADROS ACTIVOS</span><label class="switch"><input type="checkbox" id="edit-affect-profit" ${(m.affectProfit === undefined || m.affectProfit) ? 'checked' : ''}><span class="slider"></span></label></div>`;
         html += `<input type="hidden" id="is-historical" value="${m.historical ? 'true' : 'false'}">`;
     }
     openModal("Editar Registro", html + `<button class="btn btn-in" onclick="saveEditMovement(${id})">GUARDAR CAMBIOS</button></div>`);
@@ -2087,64 +1628,30 @@ function saveEditMovement(id) {
         const newAmt = cleanAmount(document.getElementById('edit-amt').value), newDsc = document.getElementById('edit-dsc').value;
         const newMethod = document.getElementById('temp-method').value, newDir = document.getElementById('temp-dir').value;
         const isAdjOrig = document.getElementById('is-adj-orig').value === 'true', origType = document.getElementById('orig-type').value;
-        
         const wasAffectProfit = document.getElementById('edit-affect-profit') ? document.getElementById('edit-affect-profit').checked : true;
-        const isHistInput = document.getElementById('is-historical');
-        const wasHistorical = (isHistInput && isHistInput.value === 'true');
+        const isHistInput = document.getElementById('is-historical'); const wasHistorical = (isHistInput && isHistInput.value === 'true');
 
         let newType = newDir;
         if (origType === 'CAP_BASE') { newType = 'CAP_BASE'; } 
         else if (origType === 'CREDIT_PENDING') { newType = 'CREDIT_PENDING'; }
+        else if (origType === 'TRANSFER') { newType = 'TRANSFER'; }
         else if (isAdjOrig) { newType = (newDir === 'IN') ? 'ADJ_IN' : 'ADJ_OUT'; }
 
         movements[mIdx].amount = newAmt; movements[mIdx].desc = newDsc; movements[mIdx].method = newMethod; movements[mIdx].type = newType;
-        movements[mIdx].historical = wasHistorical;
-        movements[mIdx].affectProfit = wasAffectProfit;
+        movements[mIdx].historical = wasHistorical; movements[mIdx].affectProfit = wasAffectProfit;
         
         if (wasHistorical && wasAffectProfit) { movements[mIdx].id = Date.now(); }
-
         if (origType !== 'CAP_BASE') { movements[mIdx].date = new Date(document.getElementById('edit-date').value).toISOString(); }
         localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeModal('history-modal'); syncToCloud(); showMsg("Cambios aplicados."); 
     }
 }
 
 function showTab(t) { document.getElementById('tab-contabilidad').style.display = t === 'contabilidad' ? 'block' : 'none'; document.getElementById('tab-planilla').style.display = t === 'planilla' ? 'block' : 'none'; document.getElementById('tab-configuracion').style.display = t === 'configuracion' ? 'block' : 'none'; document.getElementById('btn-tab-contabilidad').classList.toggle('active', t === 'contabilidad'); document.getElementById('btn-tab-planilla').classList.toggle('active', t === 'planilla'); }
-
 function toggleCierreSearch() { const s = document.getElementById('cierre-search'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
-function openCierreHistory() { 
-    let h = `<div class="history-wrapper"><table><thead><tr><th>Fecha</th><th style="text-align:center">Detalle</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>`; cierres.forEach(c => { h += `<tr><td>${getFormatedDate(c.date)}</td><td style="text-align:center"><button class="btn-ver-cierre" onclick="verDetalleCierre(${c.id})">VER</button></td><td class="profit" style="text-align:right">₡${formatVisual(c.totalNeto)}</td><td style="text-align:right"><button class="btn-icon" style="color:#ff3b3b" onclick="deleteCierre(${c.id})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
-    openModal("Historial de Cierres", h + "</tbody></table></div>"); 
-}
-
-function verDetalleCierre(id) { 
-    const c = cierres.find(x => x.id === id); 
-    if(!c) return; 
-    let htmlDesglose = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;">
-        <p><b>Periodo:</b> <br><small style="color:#aaa;">${c.note}</small></p>
-        <hr style="border:1px solid #222; margin:10px 0;">
-        <p class="profit" style="font-weight:bold; font-size:1.05rem; margin:8px 0;">Ingresos: ₡${formatVisual(c.ingresos || 0)}</p>
-        <p class="expense" style="font-weight:bold; font-size:1.05rem; margin:8px 0;">Egresos: ₡${formatVisual(c.egresos || 0)}</p>
-        <div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;">
-            <h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3>
-            <p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(c.totalNeto, 2)}</p>
-        </div>
-    </div>`;
-    openModal("Desglose del Reporte", htmlDesglose); 
-}
-
+function openCierreHistory() { let h = `<div class="history-wrapper"><table><thead><tr><th>Fecha</th><th style="text-align:center">Detalle</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>`; cierres.forEach(c => { h += `<tr><td>${getFormatedDate(c.date)}</td><td style="text-align:center"><button class="btn-ver-cierre" onclick="verDetalleCierre(${c.id})">VER</button></td><td class="profit" style="text-align:right">₡${formatVisual(c.totalNeto)}</td><td style="text-align:right"><button class="btn-icon" style="color:#ff3b3b" onclick="deleteCierre(${c.id})"><i class="fas fa-trash"></i></button></td></tr>`; }); openModal("Historial de Cierres", h + "</tbody></table></div>"); }
+function verDetalleCierre(id) { const c = cierres.find(x => x.id === id); if(!c) return; let htmlDesglose = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;"><p><b>Periodo:</b> <br><small style="color:#aaa;">${c.note}</small></p><hr style="border:1px solid #222; margin:10px 0;"><p class="profit" style="font-weight:bold; font-size:1.05rem; margin:8px 0;">Ingresos: ₡${formatVisual(c.ingresos || 0)}</p><p class="expense" style="font-weight:bold; font-size:1.05rem; margin:8px 0;">Egresos: ₡${formatVisual(c.egresos || 0)}</p><div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;"><h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3><p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(c.totalNeto, 2)}</p></div></div>`; openModal("Desglose del Reporte", htmlDesglose); }
 function deleteCierre(id) { showConfirm("¿Eliminar este cierre?", () => { cierres = cierres.filter(c => c.id !== id); localStorage.setItem('copo_cierres', JSON.stringify(cierres)); closeModal('history-modal'); openCierreHistory(); }); }
-
-function resetPeriodProfit() { 
-    showConfirm("¿Deseas reiniciar las ganancias de este periodo?", () => { 
-        lastResetDate = new Date().toISOString(); 
-        virtualProfitBase = 0; 
-        localStorage.setItem('copo_last_reset', lastResetDate); 
-        localStorage.setItem('copo_virtual_profit', "0"); 
-        updateUI(); 
-        syncToCloud();
-        showMsg("Contador de ganancias netas reiniciado con éxito.");
-    }); 
-}
+function resetPeriodProfit() { showConfirm("¿Deseas reiniciar las ganancias de este periodo?", () => { lastResetDate = new Date().toISOString(); virtualProfitBase = 0; localStorage.setItem('copo_last_reset', lastResetDate); localStorage.setItem('copo_virtual_profit', "0"); updateUI(); syncToCloud(); showMsg("Contador de ganancias netas reiniciado con éxito."); }); }
 
 function searchInPeriod() { 
     const f = document.getElementById('c-from').value, t = document.getElementById('c-to').value, kw = document.getElementById('c-keyword').value.toLowerCase().trim(), incAdj = document.getElementById('include-adj-report').checked; if(!f || !t) return showMsg("Faltan fechas"); 
@@ -2156,147 +1663,68 @@ function searchInPeriod() {
 
             let buscaMetodo = m.method ? m.method.toLowerCase() : "";
             let buscaDesc = m.desc ? m.desc.toLowerCase() : "";
-            let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : "";
+            let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : (m.type === 'TRANSFER' ? "mover dinero transferencia" : "");
 
-            if (buscaMetodo.includes("simpe") || buscaMetodo.includes("sinpe")) {
-                buscaMetodo = "simpe sinpe";
-            }
+            if (buscaMetodo.includes("simpe") || buscaMetodo.includes("sinpe")) { buscaMetodo = "simpe sinpe"; }
 
             if (kw === "" || buscaDesc.includes(kw) || buscaMetodo.includes(kw) || buscaTipoUsExt.includes(kw)) {
-                if (m.type === 'IN') { 
-                    i += m.amount; 
-                    matches.push(m); 
-                } else if (m.type === 'OUT') { 
-                    e += m.amount; 
-                    matches.push(m); 
-                } else if (m.type === 'ADJ_OUT') {
-                    if (incAdj || kw !== "") {
-                        e += m.amount; 
-                        matches.push(m);
-                    }
-                }
+                if (m.type === 'IN') { i += m.amount; matches.push(m); } 
+                else if (m.type === 'OUT') { e += m.amount; matches.push(m); } 
+                else if (m.type === 'ADJ_OUT') { if (incAdj || kw !== "") { e += m.amount; matches.push(m); } }
             }
         } 
     }); 
     
-    const balanceCalculado = i - e;
-    const notaPeriodo = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` - Filtro: "${kw}"` : "");
+    const balanceCalculado = i - e; const notaPeriodo = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` - Filtro: "${kw}"` : "");
 
-    let htmlDesglose = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;">
-        <p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Periodo:</b> <small>${notaPeriodo}</small></p>
-        <hr style="border:1px solid #222; margin:10px 0;">
-        <p class="profit" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Ingresos: ₡${formatVisual(i)}</p>
-        <p class="expense" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Egresos: ₡${formatVisual(e)}</p>
-        <div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;">
-            <h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3>
-            <p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(balanceCalculado)}</p>
-        </div>
-    </div>`;
-
+    let htmlDesglose = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;"><p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Periodo:</b> <small>${notaPeriodo}</small></p><hr style="border:1px solid #222; margin:10px 0;"><p class="profit" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Ingresos: ₡${formatVisual(i)}</p><p class="expense" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Egresos: ₡${formatVisual(e)}</p><div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;"><h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3><p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(balanceCalculado)}</p></div></div>`;
     let tablaFacturas = `<div class="history-wrapper" style="margin-top:15px; max-height:220px;"><table style="width:100%;"><thead><tr><th>Detalle</th><th style="text-align:center;">Fact.</th><th style="text-align:right;">Monto</th></tr></thead><tbody>`
-    if(matches.length === 0) {
-        tablaFacturas += `<tr><td colspan="3" style="text-align:center; color:#666; padding:15px;">Ningún documento coincide con el filtro</td></tr>`;
-    } else {
+    if(matches.length === 0) { tablaFacturas += `<tr><td colspan="3" style="text-align:center; color:#666; padding:15px;">Ningún documento coincide con el filtro</td></tr>`; } 
+    else {
         [...matches].reverse().forEach(m => {
             let eff = (m.type === 'IN' || m.type === 'ADJ_IN') ? m.amount : -m.amount;
             let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
             let cCls = isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : 'profit');
-            
             let imgBtn = "";
-            if (m.img) {
-                if (m.img.startsWith("http")) {
-                    imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`;
-                } else {
-                    imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`;
-                }
-            } else {
-                imgBtn = `<span style="color:#444; font-size:0.7rem;">S/F</span>`;
-            }
-            
+            if (m.img) { if (m.img.startsWith("http")) { imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`; } else { imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`; } } 
+            else { imgBtn = `<span style="color:#444; font-size:0.7rem;">S/F</span>`; }
             tablaFacturas += `<tr><td><small style="color:#888;">${getFormatedDate(m.date)}</small><br>${m.desc}</td><td style="text-align:center;">${imgBtn}</td><td class="${cCls}" style="text-align:right; font-weight:bold;">₡${formatVisual(eff)}</td></tr>`;
         });
     }
     tablaFacturas += `</tbody></table></div>`;
-
-    openModal("Cierre de Periodo", htmlDesglose + tablaFacturas + `
-    <button class="btn btn-in" style="margin-top:15px; margin-bottom:5px;" onclick="injectPeriodToDashboardProfit(${balanceCalculado}, '${f}', '${t}')">REFLEJAR GANANCIA EN PANEL</button>
-    <button class="btn btn-cap" style="background:#444; color:white;" onclick="saveHistoricalCierre('${f}', '${t}', ${balanceCalculado}, ${i}, ${e}, '${kw}')">GUARDAR ESTE REPORTE</button>`); 
+    openModal("Cierre de Periodo", htmlDesglose + tablaFacturas + `<button class="btn btn-in" style="margin-top:15px; margin-bottom:5px;" onclick="injectPeriodToDashboardProfit(${balanceCalculado}, '${f}', '${t}')">REFLEJAR GANANCIA EN PANEL</button><button class="btn btn-cap" style="background:#444; color:white;" onclick="saveHistoricalCierre('${f}', '${t}', ${balanceCalculado}, ${i}, ${e}, '${kw}')">GUARDAR ESTE REPORTE</button>`); 
 }
 
-function injectPeriodToDashboardProfit(amt, f, t) { 
-    virtualProfitBase += parseFloat(amt || 0); 
-    localStorage.setItem('copo_virtual_profit', virtualProfitBase); 
-    updateUI(); 
-    syncToCloud();
-    closeModal('history-modal'); 
-    showMsg("Ganancia consolidada exitosamente en el cuadro principal."); 
-}
-
-function saveHistoricalCierre(f, t, total, ing, egr, kw = "") {
-    const nota = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` - Filtro: ${kw}` : "");
-    showConfirm(`¿Deseas archivar este reporte en el historial de cierres?`, () => { 
-        cierres.unshift({ id: Date.now(), date: new Date().toISOString(), totalNeto: total, ingresos: ing, egresos: egr, note: nota }); 
-        localStorage.setItem('copo_cierres', JSON.stringify(cierres)); 
-        closeModal('history-modal'); 
-        syncToCloud();
-        showMsg("Reporte guardado con éxito."); 
-    });
-}
-
-function openMethodModal(t) { 
-    if(!document.getElementById('amount').value) return showMsg("Monto vacío"); 
-    pendingType = t; 
-    document.getElementById('method-modal').style.display = 'flex'; 
-    updateBodyScroll();
-}
+function injectPeriodToDashboardProfit(amt, f, t) { virtualProfitBase += parseFloat(amt || 0); localStorage.setItem('copo_virtual_profit', virtualProfitBase); updateUI(); syncToCloud(); closeModal('history-modal'); showMsg("Ganancia consolidada exitosamente en el cuadro principal."); }
+function saveHistoricalCierre(f, t, total, ing, egr, kw = "") { const nota = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` - Filtro: ${kw}` : ""); showConfirm(`¿Deseas archivar este reporte en el historial de cierres?`, () => { cierres.unshift({ id: Date.now(), date: new Date().toISOString(), totalNeto: total, ingresos: ing, egresos: egr, note: nota }); localStorage.setItem('copo_cierres', JSON.stringify(cierres)); closeModal('history-modal'); syncToCloud(); showMsg("Reporte guardado con éxito."); }); }
+function openMethodModal(t) { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); pendingType = t; document.getElementById('method-modal').style.display = 'flex'; updateBodyScroll(); }
 function closeMethodModal() { document.getElementById('method-modal').style.display = 'none'; updateBodyScroll(); }
+
+function openTransferModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('transfer-modal').style.display = 'flex'; updateBodyScroll(); }
+function executeTransfer(m) {
+    let dsc = document.getElementById('desc').value || (m === 'B2C' ? 'Movimiento de Banco a Efectivo' : 'Movimiento de Efectivo a Banco');
+    const userChosenDate = document.getElementById('main-date-input').value; const isoDateToSave = userChosenDate ? new Date(userChosenDate).toISOString() : new Date().toISOString();
+    const isHistoricalMove = isoDateToSave < lastResetDate;
+    movements.unshift({ id: Date.now(), type: 'TRANSFER', amount: cleanAmount(document.getElementById('amount').value), desc: dsc, method: m, date: isoDateToSave, img: "", affectProfit: true, historical: isHistoricalMove });
+    localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeModal('transfer-modal');
+    document.getElementById('amount').value = ""; document.getElementById('desc').value = ""; userInterruptedClock = false; setMainDateToNow(); syncToCloud();
+}
 
 function openUsoExternoModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('uso-externo-modal').style.display = 'flex'; updateBodyScroll(); }
 function openAjustesModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('ajustes-modal').style.display = 'flex'; updateBodyScroll(); }
 
 function executeEntry(m, ot = null) { 
-    const t = ot || pendingType; 
-    let dsc = document.getElementById('desc').value;
-    
-    if(t === 'ADJ_OUT') {
-        if(!dsc) dsc = 'Uso Externo Personal';
-        else if(!dsc.toLowerCase().includes('uso externo')) dsc = 'Uso Externo: ' + dsc;
-    } else {
-        if(!dsc) {
-            if(t === 'CAP_BASE') dsc = 'Saldo Real Fijado';
-            else dsc = 'S/D';
-        }
-    }
+    const t = ot || pendingType; let dsc = document.getElementById('desc').value;
+    if(t === 'ADJ_OUT') { if(!dsc) dsc = 'Uso Externo Personal'; else if(!dsc.toLowerCase().includes('uso externo')) dsc = 'Uso Externo: ' + dsc; } 
+    else { if(!dsc) { if(t === 'CAP_BASE') dsc = 'Saldo Real Fijado'; else dsc = 'S/D'; } }
     
     const affect = document.getElementById('main-switch') ? document.getElementById('main-switch').checked : true;
-    const userChosenDate = document.getElementById('main-date-input').value;
-    const isoDateToSave = userChosenDate ? new Date(userChosenDate).toISOString() : new Date().toISOString();
+    const userChosenDate = document.getElementById('main-date-input').value; const isoDateToSave = userChosenDate ? new Date(userChosenDate).toISOString() : new Date().toISOString();
     const isHistoricalMove = isoDateToSave < lastResetDate;
     
-    movements.unshift({ 
-        id: Date.now(), 
-        type: t, 
-        amount: cleanAmount(document.getElementById('amount').value), 
-        desc: dsc, 
-        method: m, 
-        date: isoDateToSave, 
-        img: "",
-        affectProfit: affect,
-        historical: isHistoricalMove
-    }); 
-    
-    localStorage.setItem('copo_data', JSON.stringify(movements)); 
-    updateUI(); 
-    closeMethodModal(); 
-    closeModal('uso-externo-modal');
-    closeModal('ajustes-modal');
-    
-    document.getElementById('amount').value = ""; 
-    document.getElementById('desc').value = ""; 
-    
-    userInterruptedClock = false; 
-    setMainDateToNow(); 
-    syncToCloud();
+    movements.unshift({ id: Date.now(), type: t, amount: cleanAmount(document.getElementById('amount').value), desc: dsc, method: m, date: isoDateToSave, img: "", affectProfit: affect, historical: isHistoricalMove }); 
+    localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeMethodModal(); closeModal('uso-externo-modal'); closeModal('ajustes-modal');
+    document.getElementById('amount').value = ""; document.getElementById('desc').value = ""; userInterruptedClock = false; setMainDateToNow(); syncToCloud();
 }
 </script>
 </body>

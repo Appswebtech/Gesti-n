@@ -289,6 +289,17 @@ let savedTags = JSON.parse(localStorage.getItem('copo_tags')) || ['Mayca', 'Pal�
 let currentUploadContext = { id: null, staffIdx: null }; let selectedCreditId = null; window.pendingAction = null; let pendingType = 'IN'; 
 let userInterruptedClock = false; window.isBackgroundSyncInProgress = false; window.syncOverride = localStorage.getItem('copo_sync_override') === 'true';
 
+function sortStaffShifts(shifts) {
+    if (!shifts || !Array.isArray(shifts)) return;
+    shifts.sort((a, b) => {
+        let diff = new Date(b.date) - new Date(a.date);
+        if (isNaN(diff) || diff === 0) {
+            return (b.id || 0) - (a.id || 0);
+        }
+        return diff;
+    });
+}
+
 function updateSyncToggleUI() { const btn = document.getElementById('sync-toggle-btn'); if (!btn) return; const isOnline = navigator.onLine && !window.syncOverride; if (isOnline) { btn.style.color = '#25D366'; btn.title = "Sincronización Activa"; } else { btn.style.color = '#ff3b3b'; btn.title = "Sincronización Pausada"; } }
 function toggleSyncOverride() { window.syncOverride = !window.syncOverride; localStorage.setItem('copo_sync_override', window.syncOverride ? 'true' : 'false'); updateSyncToggleUI(); if (!window.syncOverride && navigator.onLine) { forceManualSync(); } else { showMsg(window.syncOverride ? "Sincronización con la nube pausada manualmente." : "Sincronización reactivada."); } }
 
@@ -398,7 +409,7 @@ async function pullFromCloud(isRetry = false) {
                 let name = r[0] || ''; let localMatch = staff.find(s => s.name.toLowerCase().trim() === name.toLowerCase().trim()); 
                 let parsedShifts = r[3] ? JSON.parse(r[3]) : [];
                 let validShifts = parsedShifts.filter(sh => !localTrashPlanIds.has(sh.id));
-                validShifts.sort((a,b) => new Date(b.date) - new Date(a.date));
+                sortStaffShifts(validShifts);
                 let recalcDebt = 0; validShifts.forEach(sh => recalcDebt += sh.earned);
                 return { name: name, rate: parseFloat(r[1]) || 0, debt: recalcDebt, shifts: validShifts, isOpen: localMatch ? localMatch.isOpen : false, useExtras: localMatch ? (localMatch.useExtras !== undefined ? localMatch.useExtras : true) : true, activeIn: localMatch ? localMatch.activeIn : "" }; 
             });
@@ -409,7 +420,7 @@ async function pullFromCloud(isRetry = false) {
                     let cloudShiftIds = new Set(matchCloud.shifts.map(sh => sh.id)); 
                     let localOnlyShifts = localEmp.shifts.filter(sh => !cloudShiftIds.has(sh.id) && !localTrashPlanIds.has(sh.id) && !deletedSet.has(sh.id)); 
                     matchCloud.shifts = [...localOnlyShifts, ...matchCloud.shifts]; 
-                    matchCloud.shifts.sort((a,b) => new Date(b.date) - new Date(a.date));
+                    sortStaffShifts(matchCloud.shifts);
                     if (localOnlyShifts.length > 0) { let newDebt = 0; matchCloud.shifts.forEach(sh => newDebt += sh.earned); matchCloud.debt = newDebt; } 
                 } 
             });
@@ -583,6 +594,7 @@ function renderStaff() {
 }
 
 function openStaffHistory(i) {
+    if (staff[i] && staff[i].shifts) sortStaffShifts(staff[i].shifts);
     let h = `<div class="history-wrapper"><table><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:center">Fact.</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>`;
     if(staff[i].shifts) { staff[i].shifts.forEach(sh => { let det = "", colorClass = sh.earned >= 0 ? 'profit' : 'expense', actionBtnHtml = `<button class="btn-ver-cierre" onclick="viewStaffShiftInvoice(${i}, ${sh.id})">VER</button>`; if(sh.type === 'SHIFT') det = `${getFormatedTime(sh.ord)} ord ${sh.ext > 0 ? '+ ' + getFormatedTime(sh.ext) + ' ext' : ''}`; else if(sh.type === 'ADVANCE') det = `<i class="fas fa-handholding-usd"></i> ${sh.desc || "Adelanto"}`; else if(sh.type === 'AGUINALDO') { det = `<i class="fas fa-piggy-bank"></i> ${sh.desc}`; colorClass = 'aguinaldo-color'; } else if(sh.type === 'PAYMENT_SUELDO') { det = `<i class="fas fa-check"></i> ${sh.desc}`; colorClass = 'adj-color'; } else if(sh.type === 'PAYMENT_AGUINALDO') { det = `<i class="fas fa-gift"></i> Pago Aguinaldo`; colorClass = 'aguinaldo-color'; } let imgBtn = ""; if (sh.img) { if (sh.img.startsWith("http")) { imgBtn = `<button class="btn-add-img" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`; } else { imgBtn = `<img src="${sh.img}" class="img-preview-mini" onclick="zoomImage('${sh.img}', ${sh.id}, ${i})">`; } } else { imgBtn = `<button class="btn-add-img" onclick="triggerFileSelect(${sh.id}, ${i})"><i class="fas fa-plus-circle"></i></button>`; } h += `<tr><td>${getFormatedDate(sh.date)}</td><td>${det}</td><td style="text-align:center">${imgBtn}</td><td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${formatVisual(sh.earned)}</td><td style="text-align:right; white-space:nowrap;">${actionBtnHtml}<button class="btn-icon" style="color:#ff3b3b" onclick="deleteStaffMovement(${i}, ${sh.id})"><i class="fas fa-trash"></i></button></td></tr>`; }); }
     openModal("Actividad: " + staff[i].name, h + "</tbody></table></div>");
@@ -722,7 +734,7 @@ function addHours(i) {
     if(!s.shifts) s.shifts = []; 
     const shiftDate = new Date(inV).toISOString();
     s.shifts.unshift({ id: Date.now(), date: shiftDate, ord, ext, earned, type: 'SHIFT', img: "", inTime: inV, outTime: outV }); 
-    s.shifts.sort((a,b) => new Date(b.date) - new Date(a.date));
+    sortStaffShifts(s.shifts);
     s.activeIn = ""; 
     moveStaffToTop(i);
     saveStaff(); renderStaff(); 
@@ -736,7 +748,7 @@ function giveAdvance(i) {
     staff[i].debt -= amt; 
     if(!staff[i].shifts) staff[i].shifts = []; 
     staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -amt, type: 'ADVANCE', desc: dsc, img: "" }); 
-    staff[i].shifts.sort((a,b) => new Date(b.date) - new Date(a.date));
+    sortStaffShifts(staff[i].shifts);
     moveStaffToTop(i);
     saveStaff(); renderStaff(); 
     document.getElementById(`adv-amt-${i}`).value = ""; 
@@ -766,8 +778,20 @@ function resetDebt(i) {
     shiftDetails.sort((a,b) => new Date(a.date) - new Date(b.date));
     let fDesde = fechas.length > 0 ? new Date(fechas[0]).toISOString() : new Date().toISOString(), fHasta = fechas.length > 0 ? new Date(fechas[fechas.length - 1]).toISOString() : new Date().toISOString(), detail = `Sueldo: ${getFormatedTime(tOrd)} ord` + (tExt > 0 ? ` + ${getFormatedTime(tExt)} ext` : ''); 
     showConfirm(`¿Liquidar sueldo de ₡${formatVisual(sueldoPuro)}?`, () => { 
-        staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -sueldoPuro, type: 'PAYMENT_SUELDO', desc: detail, img: "", metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta, shiftDetails: shiftDetails } }); 
-        staff[i].shifts.sort((a,b) => new Date(b.date) - new Date(a.date));
+        let nowTime = Date.now();
+        let maxShiftTime = 0;
+        if (staff[i].shifts) {
+            staff[i].shifts.forEach(sh => {
+                let t = new Date(sh.date).getTime();
+                if (!isNaN(t) && t > maxShiftTime) maxShiftTime = t;
+            });
+        }
+        let payTime = Math.max(nowTime, maxShiftTime + 1000);
+        let payIso = new Date(payTime).toISOString();
+        let payId = Math.max(nowTime, maxShiftTime + 1000);
+
+        staff[i].shifts.unshift({ id: payId, date: payIso, earned: -sueldoPuro, type: 'PAYMENT_SUELDO', desc: detail, img: "", metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: fDesde, hasta: fHasta, shiftDetails: shiftDetails } }); 
+        sortStaffShifts(staff[i].shifts);
         staff[i].debt -= sueldoPuro; 
         moveStaffToTop(i);
         saveStaff(); renderStaff(); syncToCloud(); 
@@ -788,8 +812,20 @@ function payAguinaldoOnly(i) {
         metaCopia = { horasOrd: 0, horasExt: 0, tarifaBase: staff[i].rate, desde: new Date().toISOString(), hasta: new Date().toISOString(), totalSueldoPuro: 0, porcentaje: "1/12" }; 
     } 
     showConfirm(`¿Pagar aguinaldo de ₡${formatVisual(aguinaldoTotal)}?`, () => { 
-        staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); 
-        staff[i].shifts.sort((a,b) => new Date(b.date) - new Date(a.date));
+        let nowTime = Date.now();
+        let maxShiftTime = 0;
+        if (staff[i].shifts) {
+            staff[i].shifts.forEach(sh => {
+                let t = new Date(sh.date).getTime();
+                if (!isNaN(t) && t > maxShiftTime) maxShiftTime = t;
+            });
+        }
+        let payTime = Math.max(nowTime, maxShiftTime + 1000);
+        let payIso = new Date(payTime).toISOString();
+        let payId = Math.max(nowTime, maxShiftTime + 1000);
+
+        staff[i].shifts.unshift({ id: payId, date: payIso, earned: -aguinaldoTotal, type: 'PAYMENT_AGUINALDO', img: "", metaDesglose: metaCopia }); 
+        sortStaffShifts(staff[i].shifts);
         staff[i].debt -= aguinaldoTotal; 
         moveStaffToTop(i);
         saveStaff(); renderStaff(); syncToCloud(); 
@@ -805,7 +841,7 @@ function addAguinaldoToStaff(i, monto, f, t, tOrd, tExt, totalS, percent) {
     const desc = `Aguinaldo (Cálculo Legal /12) del ${formatDateSlash(f)} al ${formatDateSlash(t)}`; 
     if(!staff[i].shifts) staff[i].shifts = []; 
     staff[i].shifts.unshift({ id: Date.now(), date: new Date().toISOString(), earned: monto, type: 'AGUINALDO', desc: desc, img: "" , metaDesglose: { horasOrd: tOrd, horasExt: tExt, tarifaBase: staff[i].rate, desde: new Date(f + "T00:00:00").toISOString(), hasta: new Date(t + "T23:59:59").toISOString(), totalSueldoPuro: totalS, porcentaje: percent } }); 
-    staff[i].shifts.sort((a,b) => new Date(b.date) - new Date(a.date));
+    sortStaffShifts(staff[i].shifts);
     moveStaffToTop(i);
     saveStaff(); renderStaff(); closeModal('history-modal'); syncToCloud(); 
 }
@@ -875,7 +911,7 @@ function openTrashPlanillaModal() {
     });
     openModal("Papelera de Planilla", html + "</tbody></table></div>");
 }
-function restoreTrashPlanilla(id) { const idx = trashPlanilla.findIndex(tp => tp.shift.id === id); if (idx !== -1) { const tp = trashPlanilla.splice(idx, 1)[0]; const sIdx = staff.findIndex(s => s.name.toLowerCase() === tp.staffName.toLowerCase()); if (sIdx !== -1) { staff[sIdx].shifts.unshift(tp.shift); staff[sIdx].shifts.sort((a,b) => new Date(b.date) - new Date(a.date)); staff[sIdx].debt += tp.shift.earned; moveStaffToTop(sIdx); saveStaff(); renderStaff(); localStorage.setItem('copo_trash_planilla', JSON.stringify(trashPlanilla)); syncToCloud(); openTrashPlanillaModal(); showMsg("Movimiento restaurado al empleado " + tp.staffName); } else { trashPlanilla.unshift(tp); showMsg("Error: El empleado '" + tp.staffName + "' ya no existe."); } } }
+function restoreTrashPlanilla(id) { const idx = trashPlanilla.findIndex(tp => tp.shift.id === id); if (idx !== -1) { const tp = trashPlanilla.splice(idx, 1)[0]; const sIdx = staff.findIndex(s => s.name.toLowerCase() === tp.staffName.toLowerCase()); if (sIdx !== -1) { staff[sIdx].shifts.unshift(tp.shift); sortStaffShifts(staff[sIdx].shifts); staff[sIdx].debt += tp.shift.earned; moveStaffToTop(sIdx); saveStaff(); renderStaff(); localStorage.setItem('copo_trash_planilla', JSON.stringify(trashPlanilla)); syncToCloud(); openTrashPlanillaModal(); showMsg("Movimiento restaurado al empleado " + tp.staffName); } else { trashPlanilla.unshift(tp); showMsg("Error: El empleado '" + tp.staffName + "' ya no existe."); } } }
 function permanentlyDeletePlanillaMovement(id) { showConfirm("¿Eliminar este registro permanentemente?", () => { trashPlanilla = trashPlanilla.filter(tp => tp.shift.id !== id); localStorage.setItem('copo_trash_planilla', JSON.stringify(trashPlanilla)); syncToCloud(); openTrashPlanillaModal(); }); }
 function emptyTrashPlanilla() { showConfirm("¿Vaciar permanentemente toda la papelera de planilla?", () => { trashPlanilla = []; localStorage.setItem('copo_trash_planilla', '[]'); syncToCloud(); closeModal('history-modal'); showMsg("Papelera de planilla vaciada exitosamente."); }); }
 
@@ -927,4 +963,3 @@ function executeEntry(m, ot = null) { const t = ot || pendingType; let dsc = doc
 </script>
 </body>
 </html>
-

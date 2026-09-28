@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 11.5 - Desglose Retroactivo de Planilla</title>
+<title>Gestión Total 11.6 - Conexión Permanente y Optimización de Nube</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -99,7 +99,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 11.5 (RECONSTRUCCIÓN RETROACTIVA DE PLANILLA)</div>
+    <div class="version-tag">VERSIÓN 11.6 (CONEXIÓN PERMANENTE Y OPTIMIZACIÓN DE NUBE)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -251,7 +251,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 11.5 (RECONSTRUCCIÓN RETROACTIVA DE PLANILLA)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 11.6 (CONEXIÓN PERMANENTE Y OPTIMIZACIÓN DE NUBE)</div>
 </div>
 
 <div id="help-card"><span class="close-x" onclick="document.getElementById('help-card').style.display='none'">×</span><h3 id="help-title" style="color:#0026ff; margin-top:0;"></h3><p id="help-text" style="font-size:0.9rem; color:#ccc; line-height:1.4; margin-bottom:0;"></p></div>
@@ -273,7 +273,7 @@ const GOOGLE_API_KEY = "AIzaSyAhA8zrHsFFsuLMNcZH01p9ZAig7roK1Ac";
 const GOOGLE_DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4", "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file";
 
-let tokenClient; let gapiInited = false; let gisnited = false; let spreadsheetId = localStorage.getItem('copo_spreadsheet_id') || null;
+let tokenClient; let gapiInited = false; let gisInited = false; let spreadsheetId = localStorage.getItem('copo_spreadsheet_id') || null;
 let secure_pin_hash = localStorage.getItem('copo_pin_hash') || "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
 let movements = JSON.parse(localStorage.getItem('copo_data')) || [];
 let staff = JSON.parse(localStorage.getItem('copo_staff')) || [];
@@ -289,6 +289,37 @@ let savedTags = JSON.parse(localStorage.getItem('copo_tags')) || ['Mayca', 'Pal�
 let currentUploadContext = { id: null, staffIdx: null }; let selectedCreditId = null; window.pendingAction = null; let pendingType = 'IN'; 
 let userInterruptedClock = false; window.isBackgroundSyncInProgress = false; window.syncOverride = localStorage.getItem('copo_sync_override') === 'true';
 
+// -------------------------------------------------------------
+// COMPRESIÓN DE IMÁGENES EN EL NAVEGADOR (ALTA CALIDAD HD 2000px)
+// -------------------------------------------------------------
+async function compressImage(dataUrl, maxWidth = 2000, quality = 0.85) {
+    return new Promise((resolve) => {
+        if (!dataUrl || !dataUrl.startsWith("data:image")) return resolve(dataUrl);
+        const img = new Image();
+        img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth || height > maxWidth) {
+                if (width > height) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                } else {
+                    width = Math.round((width * maxWidth) / height);
+                    height = maxWidth;
+                }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+    });
+}
+
 function sortStaffShifts(shifts) {
     if (!shifts || !Array.isArray(shifts)) return;
     shifts.sort((a, b) => {
@@ -298,6 +329,22 @@ function sortStaffShifts(shifts) {
         }
         return diff;
     });
+}
+
+function updateSyncStatusBadge() {
+    const statusBadge = document.getElementById('cloud-status');
+    if (!statusBadge) return;
+    if (gapiInited && gapi.client.getToken()) {
+        statusBadge.innerText = "Conectado";
+        statusBadge.className = "status-badge status-connected";
+        statusBadge.style.backgroundColor = "";
+        statusBadge.style.color = "";
+    } else {
+        statusBadge.innerText = "Desconectado";
+        statusBadge.className = "status-badge status-disconnected";
+        statusBadge.style.backgroundColor = "";
+        statusBadge.style.color = "";
+    }
 }
 
 function updateSyncToggleUI() { const btn = document.getElementById('sync-toggle-btn'); if (!btn) return; const isOnline = navigator.onLine && !window.syncOverride; if (isOnline) { btn.style.color = '#25D366'; btn.title = "Sincronización Activa"; } else { btn.style.color = '#ff3b3b'; btn.title = "Sincronización Pausada"; } }
@@ -311,19 +358,63 @@ window.onload = function() {
     document.addEventListener('click', function(e) { if (!e.target.closest('.tags-container')) { const dd = document.getElementById('tags-dropdown'); if (dd) dd.style.display = 'none'; } });
     updateSyncToggleUI(); window.addEventListener('online', updateSyncToggleUI); window.addEventListener('offline', updateSyncToggleUI);
     setInterval(async () => { updateSyncToggleUI(); if (window.syncOverride || !navigator.onLine) return; if (gapiInited && gapi.client.getToken() && !window.isBackgroundSyncInProgress) { window.isBackgroundSyncInProgress = true; try { await pullFromCloud(); await syncToCloud(); } catch (e) {} finally { window.isBackgroundSyncInProgress = false; } } }, 20000);
-    setInterval(async () => { if (gapiInited && gapi.client.getToken()) { await refreshGoogleTokenSilently(); } }, 3000000);
+    setInterval(async () => { if (gapiInited && gapi.client.getToken()) { await refreshGoogleTokenSilently(); } }, 1800000); // Cada 30 min
 };
 
 function gapiLoad() { gapi.load('client', initializeGapiClient); }
-async function initializeGapiClient() { await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: GOOGLE_DISCOVERY_DOCS }); gapiInited = true; let savedToken = localStorage.getItem('google_access_token'); if (savedToken) { gapi.client.setToken({ access_token: savedToken }); } if (gapi.client.getToken() !== null) { document.getElementById('btn-sync-now').style.display = "block"; document.getElementById('cloud-status').innerText = "Conectado"; document.getElementById('cloud-status').className = "status-badge status-connected"; if (!window.syncOverride && navigator.onLine) { await pullFromCloud(); } } }
+async function initializeGapiClient() { 
+    await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: GOOGLE_DISCOVERY_DOCS }); 
+    gapiInited = true; 
+    let savedToken = localStorage.getItem('google_access_token'); 
+    if (savedToken) { gapi.client.setToken({ access_token: savedToken }); } 
+    if (gapi.client.getToken() !== null) { 
+        document.getElementById('btn-sync-now').style.display = "block"; 
+        updateSyncStatusBadge(); 
+        if (!window.syncOverride && navigator.onLine) { await pullFromCloud(); } 
+    } 
+}
 function gisInit() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_SCOPES, callback: '', }); gisInited = true; }
 
 function handleAuthClick() {
-    tokenClient.callback = async (resp) => { if (resp.error !== undefined) { throw (resp); } localStorage.setItem('google_access_token', resp.access_token); document.getElementById('cloud-status').innerText = "Conectado"; document.getElementById('cloud-status').className = "status-badge status-connected"; document.getElementById('btn-sync-now').style.display = "block"; let id = await checkAndCreateSpreadsheet(); let cloudHasData = false; try { let check = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Contabilidad!A2:A2" }); if (check.result.values && check.result.values.length > 0) cloudHasData = true; } catch(e){} if (cloudHasData) { showMsg("¡Enlazado con éxito! Fusionando datos de la nube..."); await pullFromCloud(); } else { showMsg("¡Enlazado con éxito! Subiendo tus datos locales por primera vez..."); await syncToCloud(); } };
+    tokenClient.callback = async (resp) => { 
+        if (resp.error !== undefined) { throw (resp); } 
+        localStorage.setItem('google_access_token', resp.access_token); 
+        gapi.client.setToken({ access_token: resp.access_token });
+        updateSyncStatusBadge(); 
+        document.getElementById('btn-sync-now').style.display = "block"; 
+        let id = await checkAndCreateSpreadsheet(); 
+        let cloudHasData = false; 
+        try { 
+            let check = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: id, range: "Contabilidad!A2:A2" }); 
+            if (check.result.values && check.result.values.length > 0) cloudHasData = true; 
+        } catch(e){} 
+        if (cloudHasData) { 
+            showMsg("¡Enlazado con éxito! Fusionando datos de la nube..."); 
+            await pullFromCloud(); 
+        } else { 
+            showMsg("¡Enlazado con éxito! Subiendo tus datos locales por primera vez..."); 
+            await syncToCloud(); 
+        } 
+    };
     if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } else { tokenClient.requestAccessToken({prompt: ''}); }
 }
 
-async function refreshGoogleTokenSilently() { return new Promise((resolve) => { if (!tokenClient) return resolve(false); tokenClient.callback = (resp) => { if (resp.error !== undefined) { resolve(false); } else { localStorage.setItem('google_access_token', resp.access_token); gapi.client.setToken({ access_token: resp.access_token }); resolve(true); } }; tokenClient.requestAccessToken({ prompt: 'none' }); }); }
+async function refreshGoogleTokenSilently() { 
+    return new Promise((resolve) => { 
+        if (!tokenClient) return resolve(false); 
+        tokenClient.callback = (resp) => { 
+            if (resp.error !== undefined) { 
+                resolve(false); 
+            } else { 
+                localStorage.setItem('google_access_token', resp.access_token); 
+                gapi.client.setToken({ access_token: resp.access_token }); 
+                updateSyncStatusBadge();
+                resolve(true); 
+            } 
+        }; 
+        try { tokenClient.requestAccessToken({ prompt: 'none' }); } catch(e) { resolve(false); }
+    }); 
+}
 
 let papeleraChecked = false;
 async function ensurePapeleraSheetsExist(id) {
@@ -353,7 +444,53 @@ async function checkAndCreateSpreadsheet() {
 }
 
 async function downloadDriveImageAsBase64(fileId) { if (!gapiInited || !gapi.client.getToken()) return ""; try { const token = gapi.client.getToken().access_token; const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { 'Authorization': 'Bearer ' + token } }); if (!res.ok) throw new Error("File not found"); const blob = await res.blob(); return new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); }); } catch (err) { return ""; } }
-async function uploadImageToDrive(base64DataUrl, fileName) { if (!gapiInited || !gapi.client.getToken()) return null; try { const parts = base64DataUrl.split(','); const mimeType = parts[0].match(/:(.*?);/)[1]; const base64Data = parts[1]; const metadata = { name: fileName, mimeType: mimeType }; const boundary = 'foo_bar_boundary'; const delimiter = "\r\n--" + boundary + "\r\n"; const close_delim = "\r\n--" + boundary + "--"; const multipartRequestBody = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Transfer-Encoding: base64\r\n' + 'Content-Type: ' + mimeType + '\r\n\r\n' + base64Data + close_delim; let response = await gapi.client.request({ 'path': '/upload/drive/v3/files', 'method': 'POST', 'params': {'uploadType': 'multipart'}, 'headers': { 'Content-Type': 'multipart/related; boundary=' + boundary }, 'body': multipartRequestBody }); let fileId = response.result.id; try { await gapi.client.drive.permissions.create({ fileId: fileId, resource: { role: 'reader', type: 'anyone' } }); } catch(e){} let fileInfo = await gapi.client.drive.files.get({ fileId: fileId, fields: 'webViewLink' }); return { link: fileInfo.result.webViewLink || "", id: fileId }; } catch (err) { return null; } }
+
+async function uploadImageToDrive(base64DataUrl, fileName) { 
+    if (!gapiInited) return null; 
+    if (!gapi.client.getToken()) {
+        let refreshed = await refreshGoogleTokenSilently();
+        if (!refreshed) return null;
+    }
+
+    try { 
+        let uploadDataUrl = base64DataUrl.length > 800000 ? await compressImage(base64DataUrl, 2000, 0.85) : base64DataUrl;
+        const parts = uploadDataUrl.split(','); 
+        const mimeType = parts[0].match(/:(.*?);/)[1]; 
+        const base64Data = parts[1]; 
+        const metadata = { name: fileName, mimeType: mimeType }; 
+        const boundary = 'foo_bar_boundary'; 
+        const delimiter = "\r\n--" + boundary + "\r\n"; 
+        const close_delim = "\r\n--" + boundary + "--"; 
+        const multipartRequestBody = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Transfer-Encoding: base64\r\n' + 'Content-Type: ' + mimeType + '\r\n\r\n' + base64Data + close_delim; 
+
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout en subida a Drive")), 20000));
+
+        let uploadPromise = gapi.client.request({ 
+            'path': '/upload/drive/v3/files', 
+            'method': 'POST', 
+            'params': {'uploadType': 'multipart'}, 
+            'headers': { 'Content-Type': 'multipart/related; boundary=' + boundary }, 
+            'body': multipartRequestBody 
+        }); 
+
+        let response = await Promise.race([uploadPromise, timeoutPromise]);
+        let fileId = response.result.id; 
+
+        try { await gapi.client.drive.permissions.create({ fileId: fileId, resource: { role: 'reader', type: 'anyone' } }); } catch(e){} 
+        let fileInfo = await gapi.client.drive.files.get({ fileId: fileId, fields: 'webViewLink' }); 
+        return { link: fileInfo.result.webViewLink || "", id: fileId }; 
+    } catch (err) { 
+        console.error("Error al subir archivo a Drive:", err);
+        let is401 = err.status === 401 || (err.result && err.result.error && err.result.error.code === 401);
+        if (is401) {
+            let refreshed = await refreshGoogleTokenSilently();
+            if (refreshed) {
+                try { return await uploadImageToDrive(base64DataUrl, fileName); } catch(e) { return null; }
+            }
+        }
+        return null; 
+    } 
+}
 
 async function pullFromCloud(isRetry = false) {
     if (!gapiInited || !gapi.client.getToken()) return;
@@ -482,8 +619,20 @@ async function syncToCloud(isRetry = false) {
         await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: id, range: "Configuracion!A1:Z100" });
         await gapi.client.sheets.spreadsheets.values.update({ spreadsheetId: id, range: "Configuracion!A1", valueInputOption: "USER_ENTERED", resource: { values: configRows } });
 
-        if (statusBadge && !window.isBackgroundSyncInProgress) { statusBadge.innerText = "Sincronizado"; statusBadge.className = "status-badge status-connected"; statusBadge.style.backgroundColor = ""; statusBadge.style.color = ""; }
-    } catch (err) { let is401 = err.status === 401 || (err.result && err.result.error && err.result.error.code === 401); if (is401 && !isRetry) { let refreshed = await refreshGoogleTokenSilently(); if (refreshed) return await syncToCloud(true); } if (statusBadge && !window.isBackgroundSyncInProgress) { statusBadge.innerText = "Error Sinc."; statusBadge.className = "status-badge status-disconnected"; statusBadge.style.backgroundColor = ""; statusBadge.style.color = ""; } }
+        if (!window.isBackgroundSyncInProgress) { updateSyncStatusBadge(); }
+    } catch (err) { 
+        let is401 = err.status === 401 || (err.result && err.result.error && err.result.error.code === 401); 
+        if (is401 && !isRetry) { 
+            let refreshed = await refreshGoogleTokenSilently(); 
+            if (refreshed) return await syncToCloud(true); 
+        } 
+        if (statusBadge && !window.isBackgroundSyncInProgress) { 
+            statusBadge.innerText = "Error Sinc."; 
+            statusBadge.className = "status-badge status-disconnected"; 
+            statusBadge.style.backgroundColor = ""; 
+            statusBadge.style.color = ""; 
+        } 
+    }
 }
 
 async function forceManualSync() { await pullFromCloud(); await syncToCloud(); showMsg("¡Refrescamiento bidireccional completado! Datos alineados con la nube."); }
@@ -495,7 +644,42 @@ function logout() { document.getElementById('admin-panel').style.display = 'none
 
 function applyBusinessIdentity() { const loginArea = document.getElementById('login-logo-area'); const headerArea = document.getElementById('header-logo-area'); let logoSrc = bizData.logo || ""; let logoHtml = logoSrc ? `<img src="${logoSrc}" class="logo-img" onclick="zoomImage('${bizData.logo}', 'LOGO')">` : `<span class="logo-small">${bizData.name}</span>`; headerArea.innerHTML = `<div class="logo-container">${logoHtml}${bizData.owner ? `<span class="owner-text">${bizData.owner}</span>` : ""}</div>`; loginArea.innerHTML = logoSrc ? `<img src="${logoSrc}" class="logo-login" onclick="zoomImage('${bizData.logo}', 'LOGO')">` : `<div class="logo-small" style="margin-bottom:20px;">${bizData.name}</div>`; }
 
-function updateBusinessLogo(input) { const file = input.files[0]; if (file) { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = async (e) => { let dataUrl = e.target.result; bizData.logo = dataUrl; applyBusinessIdentity(); if (gapiInited && gapi.client.getToken()) { const statusBadge = document.getElementById('cloud-status'); if (statusBadge) statusBadge.innerText = "Subiendo a Drive..."; const cloudRes = await uploadImageToDrive(dataUrl, `Logo_Perfil_GestionTotal_${Date.now()}_${file.name}`); if (cloudRes && cloudRes.id) { bizData.logoDriveId = cloudRes.id; localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); applyBusinessIdentity(); showMsg("Foto subida a Drive y vinculada permanentemente con Base64."); } else { showMsg("No se pudo subir a Drive, se mantendrá en memoria local."); } } else { localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); showMsg("Logo guardado localmente. Conéctate a Google para subirlo y protegerlo."); } await syncToCloud(); }; } }
+function updateBusinessLogo(input) { 
+    const file = input.files[0]; 
+    if (file) { 
+        const reader = new FileReader(); 
+        reader.readAsDataURL(file); 
+        reader.onload = async (e) => { 
+            let rawDataUrl = e.target.result; 
+            let dataUrl = await compressImage(rawDataUrl, 2000, 0.85);
+            bizData.logo = dataUrl; 
+            applyBusinessIdentity(); 
+            if (gapiInited && gapi.client.getToken()) { 
+                const statusBadge = document.getElementById('cloud-status'); 
+                if (statusBadge) statusBadge.innerText = "Subiendo a Drive..."; 
+                try {
+                    const cloudRes = await uploadImageToDrive(dataUrl, `Logo_Perfil_GestionTotal_${Date.now()}_${file.name}`); 
+                    if (cloudRes && cloudRes.id) { 
+                        bizData.logoDriveId = cloudRes.id; 
+                        localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
+                        applyBusinessIdentity(); 
+                        showMsg("Foto optimizada, subida a Drive y vinculada con éxito."); 
+                    } else { 
+                        showMsg("Logo guardado localmente. Se respaldará en Drive al reconectar."); 
+                    } 
+                } catch(err) {
+                    showMsg("Logo guardado en memoria local.");
+                } finally {
+                    updateSyncStatusBadge();
+                }
+            } else { 
+                localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); 
+                showMsg("Logo guardado localmente. Conéctate a Google para subirlo y protegerlo."); 
+            } 
+            await syncToCloud(); 
+        }; 
+    } 
+}
 
 function saveBusinessIdentity() { bizData.name = document.getElementById('biz-name-input').value || "Gestión Total"; bizData.owner = document.getElementById('owner-name-input').value; localStorage.setItem('copo_biz_data', JSON.stringify(bizData)); applyBusinessIdentity(); syncToCloud(); showMsg("Identidad guardada y sincronizada."); }
 function hashPin(pin) { let hash = 0; for (let i = 0; i < pin.length; i++) { const char = pin.charCodeAt(i); hash = (hash << 5) - hash + char; hash = hash & hash; } return hash.toString(16); }
@@ -568,9 +752,75 @@ window.loadAllMovements = function() { window.maxVisibleMovements = Infinity; up
 function openCreditReleaseModal(id) { selectedCreditId = id; document.getElementById('credit-release-modal').style.display = 'flex'; updateBodyScroll(); }
 function releaseCreditToCashflow(methodSelected) { const mIdx = movements.findIndex(m => m.id === selectedCreditId); if (mIdx !== -1) { movements[mIdx].type = 'IN'; movements[mIdx].method = methodSelected; movements[mIdx].desc = movements[mIdx].desc + ` (Saldado en ${methodSelected})`; movements[mIdx].date = new Date().toISOString(); localStorage.setItem('copo_data', JSON.stringify(movements)); closeModal('credit-release-modal'); updateUI(); syncToCloud(); showMsg("¡Crédito cobrado con éxito! Fondos agregados al flujo activo."); } selectedCreditId = null; }
 function triggerFileSelect(id, staffIdx = null) { currentUploadContext.id = id; currentUploadContext.staffIdx = staffIdx; const fileInput = document.getElementById('table-file-input'); fileInput.value = ""; fileInput.click(); }
-function processTableFile(input) { const file = input.files[0]; const targetMoveId = currentUploadContext.id; const targetStaffIdx = currentUploadContext.staffIdx; if (file && targetMoveId !== null) { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = async (e) => { let dataUrl = e.target.result; const statusBadge = document.getElementById('cloud-status'); if (statusBadge) statusBadge.innerText = "Fletando archivo..."; let finalUrl = dataUrl; if (gapiInited && gapi.client.getToken()) { let res = await uploadImageToDrive(dataUrl, `Factura_${targetMoveId}_${file.name}`); if (res) finalUrl = res.link; } if (targetStaffIdx !== null) { const sIdx = currentUploadContext.staffIdx; const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === targetMoveId); if (shiftIdx !== -1) { staff[sIdx].shifts[shiftIdx].img = finalUrl; saveStaff(); renderStaff(); closeModal('history-modal'); openStaffHistory(sIdx); syncToCloud(); } } else { const mIdx = movements.findIndex(m => m.id === targetMoveId); if (mIdx !== -1) { movements[mIdx].img = finalUrl; localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); syncToCloud(); } } }; } currentUploadContext = { id: null, staffIdx: null }; input.value = ""; }
 
-function exportDataBackup() { const backupPackage = { version: "11.5", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_trash_planilla: trashPlanilla, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags, copo_deleted_shifts: deletedShiftIds }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); showMsg("Copia de seguridad exportada con éxito."); }
+function processTableFile(input) { 
+    const file = input.files[0]; 
+    const targetMoveId = currentUploadContext.id; 
+    const targetStaffIdx = currentUploadContext.staffIdx; 
+    if (file && targetMoveId !== null) { 
+        const reader = new FileReader(); 
+        reader.readAsDataURL(file); 
+        reader.onload = async (e) => { 
+            let rawDataUrl = e.target.result; 
+            const statusBadge = document.getElementById('cloud-status'); 
+            if (statusBadge) { 
+                statusBadge.innerText = "Optimizando foto..."; 
+                statusBadge.className = "status-badge"; 
+                statusBadge.style.backgroundColor = "#ffcc00"; 
+                statusBadge.style.color = "black"; 
+            } 
+            
+            let compressedUrl = await compressImage(rawDataUrl, 2000, 0.85); 
+            let finalUrl = compressedUrl; 
+
+            if (gapiInited && gapi.client.getToken()) { 
+                if (statusBadge) statusBadge.innerText = "Fletando archivo..."; 
+                try { 
+                    let res = await uploadImageToDrive(compressedUrl, `Factura_${targetMoveId}_${file.name}`); 
+                    if (res && res.link) { 
+                        finalUrl = res.link; 
+                    } else { 
+                        showMsg("Foto guardada localmente. No se pudo subir a Drive en este instante."); 
+                    } 
+                } catch(uploadErr) { 
+                    console.error("Error en proceso de subida:", uploadErr); 
+                    showMsg("Foto adjuntada localmente por falla de red."); 
+                } 
+            } else { 
+                showMsg("Foto adjuntada localmente. Conéctate a Google para respaldarla en Drive."); 
+            } 
+
+            if (targetStaffIdx !== null) { 
+                const sIdx = currentUploadContext.staffIdx; 
+                const shiftIdx = staff[sIdx].shifts.findIndex(sh => sh.id === targetMoveId); 
+                if (shiftIdx !== -1) { 
+                    staff[sIdx].shifts[shiftIdx].img = finalUrl; 
+                    saveStaff(); 
+                    renderStaff(); 
+                    closeModal('history-modal'); 
+                    openStaffHistory(sIdx); 
+                    syncToCloud(); 
+                } 
+            } else { 
+                const mIdx = movements.findIndex(m => m.id === targetMoveId); 
+                if (mIdx !== -1) { 
+                    movements[mIdx].img = finalUrl; 
+                    localStorage.setItem('copo_data', JSON.stringify(movements)); 
+                    updateUI(); 
+                    syncToCloud(); 
+                } 
+            } 
+            updateSyncStatusBadge(); 
+            currentUploadContext = { id: null, staffIdx: null }; 
+            input.value = ""; 
+        }; 
+    } else { 
+        currentUploadContext = { id: null, staffIdx: null }; 
+        input.value = ""; 
+    } 
+}
+
+function exportDataBackup() { const backupPackage = { version: "11.6", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_trash_planilla: trashPlanilla, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags, copo_deleted_shifts: deletedShiftIds }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); showMsg("Copia de seguridad exportada con éxito."); }
 function importDataBackup(input) { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const importedPackage = JSON.parse(e.target.result); if (!importedPackage.copo_data || !importedPackage.copo_pin_hash || !importedPackage.copo_staff) { return showMsg("Error: Archivo inválido."); } showConfirm("¿Está seguro de restaurar esta copia de seguridad?", () => { localStorage.setItem('copo_pin_hash', importedPackage.copo_pin_hash); localStorage.setItem('copo_data', JSON.stringify(importedPackage.copo_data)); localStorage.setItem('copo_staff', JSON.stringify(importedPackage.copo_staff)); localStorage.setItem('copo_cierres', JSON.stringify(importedPackage.copo_cierres || [])); localStorage.setItem('copo_trash', JSON.stringify(importedPackage.copo_trash || [])); localStorage.setItem('copo_trash_planilla', JSON.stringify(importedPackage.copo_trash_planilla || [])); localStorage.setItem('copo_virtual_profit', importedPackage.copo_virtual_profit || 0); localStorage.setItem('copo_last_reset', importedPackage.copo_last_reset || new Date(0).toISOString()); if(importedPackage.copo_tags) { localStorage.setItem('copo_tags', JSON.stringify(importedPackage.copo_tags)); savedTags = importedPackage.copo_tags; } localStorage.setItem('copo_deleted_shifts', JSON.stringify(importedPackage.copo_deleted_shifts || [])); let bData = importedPackage.bizData || { name: "Gestión Total", owner: "", logo: "", logoDriveId: "" }; localStorage.setItem('copo_biz_data', JSON.stringify(bData)); secure_pin_hash = importedPackage.copo_pin_hash; movements = importedPackage.copo_data; staff = importedPackage.copo_staff; cierres = importedPackage.cierres || []; trashMovements = importedPackage.copo_trash || []; trashPlanilla = importedPackage.copo_trash_planilla || []; virtualProfitBase = parseFloat(importedPackage.copo_virtual_profit || 0); lastResetDate = importedPackage.copo_last_reset || new Date(0).toISOString(); deletedShiftIds = importedPackage.copo_deleted_shifts || []; bizData = bData; if(bizData.name) document.getElementById('biz-name-input').value = bizData.name; if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner; applyBusinessIdentity(); userInterruptedClock = false; setMainDateToNow(); updateUI(); renderStaff(); syncToCloud(); showMsg("¡Restauración Completa!"); }); } catch (err) { showMsg("Error crítico al procesar el archivo."); } input.value = ""; }; reader.readAsText(file); }
 function filtrarMovimientos() { updateUI(); }
 
@@ -634,7 +884,6 @@ function viewStaffShiftInvoice(staffIdx, shiftId) {
         let meta = sh.metaDesglose || {};
         let shiftDetails = meta.shiftDetails || [];
         
-        // ALGORITMO RETROACTIVO: Reconstruir desglose si es un pago viejo
         if (!shiftDetails || shiftDetails.length === 0) {
             let chronologicalShifts = [...s.shifts].sort((a,b) => new Date(a.date) - new Date(b.date));
             let payIndex = chronologicalShifts.findIndex(x => x.id === shiftId);

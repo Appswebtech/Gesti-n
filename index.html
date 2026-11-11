@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Total 11.6 - Conexión Permanente y Optimización de Nube</title>
+<title>Gestión Total 11.7 - Filtros Rápidos por Etiquetas</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -93,13 +93,19 @@ input:checked + .slider:before { transform: translateX(20px); }
 .status-badge { display: inline-block; padding: 4px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
 .status-disconnected { background: #331111; color: #ff3b3b; border: 1px solid #552222; }
 .status-connected { background: #113311; color: #25D366; border: 1px solid #225522; }
+
+/* NUEVOS ESTILOS PARA LAS ETIQUETAS DEL BUSCADOR */
+.search-pill { background: #0026ff; color: white; border-radius: 12px; padding: 4px 10px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; font-weight: bold; }
+.search-pill .close-pill { cursor: pointer; font-size: 0.9rem; font-weight: bold; color: rgba(255,255,255,0.6); line-height: 1; }
+.search-pill .close-pill:hover { color: #ff3b3b; }
+.search-input-wrapper input:focus { border: none !important; outline: none !important; box-shadow: none !important; }
 </style>
 </head>
 <body id="main-body">
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 11.6 (CONEXIÓN PERMANENTE Y OPTIMIZACIÓN DE NUBE)</div>
+    <div class="version-tag">VERSIÓN 11.7 (CONEXIÓN PERMANENTE Y ETIQUETAS)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -143,8 +149,13 @@ input:checked + .slider:before { transform: translateX(20px); }
                     <div><span style="font-size:0.6rem; color:#888; font-weight:bold; margin-left:5px;">HASTA</span><input type="date" id="c-to" style="margin:0;"></div>
                 </div>
                 <div style="display:block;">
-                    <span style="font-size:0.6rem; color:#888; font-weight:bold; margin-left:5px;">PALABRA CLAVE (OPCIONAL)</span>
-                    <input type="text" id="c-keyword" placeholder="Filtro por detalle" style="margin-bottom:10px;">
+                    <span style="font-size:0.6rem; color:#888; font-weight:bold; margin-left:5px;">PALABRA CLAVE / ETIQUETAS (OPCIONAL)</span>
+                    <div class="search-input-wrapper" style="display:flex; align-items:center; flex-wrap:wrap; gap:5px; background:#0b0b0b; border:1px solid #333; border-radius:10px; padding:5px 10px; position:relative; margin-bottom:10px; width:100%; box-sizing:border-box;">
+                        <div id="cierre-pills-container" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                        <input type="text" id="c-keyword" placeholder="Filtro por detalle" style="border:none; background:transparent; outline:none; flex:1; min-width:120px; padding:5px; margin:0; box-shadow:none; color:white;">
+                        <button class="tags-btn-icon" style="position:static; transform:none; padding:5px; background:none; border:none; cursor:pointer;" onclick="toggleSearchTagsDropdown(event, 'cierre')">🏷️</button>
+                        <div id="cierre-search-tags-dropdown" class="tags-dropdown" style="top:100%; position:absolute; left:0; width:100%; box-sizing:border-box;"></div>
+                    </div>
                     <div class="toggle-box" style="margin-bottom:12px; background:#000;">
                         <span>INCLUIR GASTOS PERSONALES</span>
                         <label class="switch"><input type="checkbox" id="include-adj-report"><span class="slider"></span></label>
@@ -179,8 +190,13 @@ input:checked + .slider:before { transform: translateX(20px); }
             <button class="btn btn-cap help-trigger" onclick="openAjustesModal()" data-title="Fijar Saldo / Crédito" data-help="Fuerza saldos reales o guarda cuentas por cobrar.">FIJAR SALDO REAL / CRÉDITO</button>
         </div>
 
-        <div class="search-container-flex">
-            <input type="text" id="buscador" onkeyup="filtrarMovimientos()" placeholder="🔍 Buscar detalle o método..." style="margin:0; flex:1;">
+        <div class="search-container-flex" style="flex-wrap: wrap;">
+            <div class="search-input-wrapper" style="flex:1; display:flex; align-items:center; flex-wrap:wrap; gap:5px; background:#0b0b0b; border:1px solid #333; border-radius:10px; padding:5px 10px; position:relative; min-width: 250px;">
+                <div id="search-pills-container" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                <input type="text" id="buscador" onkeyup="filtrarMovimientos()" placeholder="🔍 Buscar detalle o método..." style="border:none; background:transparent; outline:none; flex:1; min-width:120px; padding:5px; margin:0; box-shadow:none; color:white;">
+                <button class="tags-btn-icon" style="position:static; transform:none; padding:5px; background:none; border:none; cursor:pointer;" onclick="toggleSearchTagsDropdown(event, 'main')">🏷️</button>
+                <div id="main-search-tags-dropdown" class="tags-dropdown" style="top:100%; position:absolute; left:0; width:100%; box-sizing:border-box;"></div>
+            </div>
             <div class="count-badge"><small>Movs</small><span id="mov-counter-val">0</span></div>
         </div>
 
@@ -251,7 +267,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 11.6 (CONEXIÓN PERMANENTE Y OPTIMIZACIÓN DE NUBE)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 11.7 (CONEXIÓN PERMANENTE Y ETIQUETAS)</div>
 </div>
 
 <div id="help-card"><span class="close-x" onclick="document.getElementById('help-card').style.display='none'">×</span><h3 id="help-title" style="color:#0026ff; margin-top:0;"></h3><p id="help-text" style="font-size:0.9rem; color:#ccc; line-height:1.4; margin-bottom:0;"></p></div>
@@ -288,6 +304,9 @@ window.maxVisibleMovements = 50;
 let savedTags = JSON.parse(localStorage.getItem('copo_tags')) || ['Mayca', 'Palí', 'Gasolina', 'Planilla', 'Uso Externo Personal', 'Luz', 'Alquiler'];
 let currentUploadContext = { id: null, staffIdx: null }; let selectedCreditId = null; window.pendingAction = null; let pendingType = 'IN'; 
 let userInterruptedClock = false; window.isBackgroundSyncInProgress = false; window.syncOverride = localStorage.getItem('copo_sync_override') === 'true';
+
+let mainSearchTags = [];
+let cierreSearchTags = [];
 
 // -------------------------------------------------------------
 // COMPRESIÓN DE IMÁGENES EN EL NAVEGADOR (ALTA CALIDAD HD 2000px)
@@ -355,7 +374,13 @@ window.onload = function() {
     setMainDateToNow(); setInterval(setMainDateToNow, 1000);
     const mainDateInp = document.getElementById('main-date-input'); if(mainDateInp) { mainDateInp.addEventListener('input', () => { userInterruptedClock = true; }); }
     updateUI(); renderStaff(); initManual(); gapiLoad(); gisInit();
-    document.addEventListener('click', function(e) { if (!e.target.closest('.tags-container')) { const dd = document.getElementById('tags-dropdown'); if (dd) dd.style.display = 'none'; } });
+    document.addEventListener('click', function(e) { 
+        if (!e.target.closest('.tags-container') && !e.target.closest('.search-input-wrapper')) { 
+            const dd = document.getElementById('tags-dropdown'); if (dd) dd.style.display = 'none'; 
+            const ddMain = document.getElementById('main-search-tags-dropdown'); if (ddMain) ddMain.style.display = 'none';
+            const ddCierre = document.getElementById('cierre-search-tags-dropdown'); if (ddCierre) ddCierre.style.display = 'none';
+        } 
+    });
     updateSyncToggleUI(); window.addEventListener('online', updateSyncToggleUI); window.addEventListener('offline', updateSyncToggleUI);
     setInterval(async () => { updateSyncToggleUI(); if (window.syncOverride || !navigator.onLine) return; if (gapiInited && gapi.client.getToken() && !window.isBackgroundSyncInProgress) { window.isBackgroundSyncInProgress = true; try { await pullFromCloud(); await syncToCloud(); } catch (e) {} finally { window.isBackgroundSyncInProgress = false; } } }, 20000);
     setInterval(async () => { if (gapiInited && gapi.client.getToken()) { await refreshGoogleTokenSilently(); } }, 1800000); // Cada 30 min
@@ -723,15 +748,26 @@ function updateUI() {
         }
     });
 
-    const buscadorInp = document.getElementById('buscador'); const v = buscadorInp ? buscadorInp.value.toLowerCase().trim() : ""; const esBusquedaElectronica = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
+    const buscadorInp = document.getElementById('buscador'); const v = buscadorInp ? buscadorInp.value.toLowerCase().trim() : ""; 
+    let searchTerms = [...mainSearchTags.map(t => t.toLowerCase())];
+    if (v !== "") searchTerms.push(v);
+    
     let renderedCount = 0; let displayMovements = [...movements]; displayMovements.sort((x, y) => { let diff = new Date(y.date) - new Date(x.date); if (diff === 0) return y.id - x.id; return diff; });
 
     displayMovements.forEach(m => {
         let isCap = m.type === 'CAP_BASE'; let isCredit = m.type === 'CREDIT_PENDING'; let isUsoExterno = m.type === 'ADJ_OUT'; let isTransfer = m.type === 'TRANSFER';
         let buscaMetodo = m.method ? m.method.toLowerCase() : ""; let buscaDesc = m.desc ? m.desc.toLowerCase() : ""; let buscaTipoUsExt = isUsoExterno ? "uso externo gasto personal" : (isTransfer ? "mover dinero transferencia banco efectivo" : "");
         let textLinea = `${buscaDesc} ${buscaMetodo} ${buscaTipoUsExt} ${m.type}`.toLowerCase();
-        let match = false; if (v === "") { match = true; } else if (esBusquedaElectronica) { match = textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple"); } else { match = textLinea.includes(v); }
-        if (!match) return; if (v === "" && renderedCount >= window.maxVisibleMovements) return; renderedCount++;
+        
+        let match = true;
+        if (searchTerms.length > 0) {
+            match = searchTerms.some(term => {
+                let isElec = term.includes("sinpe") || term.includes("simpe") || term.includes("simple");
+                return isElec ? (textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple")) : textLinea.includes(term);
+            });
+        }
+        
+        if (!match) return; if (searchTerms.length === 0 && renderedCount >= window.maxVisibleMovements) return; renderedCount++;
         let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
         let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') ? m.amount : -m.amount;
         let effectStr = isTransfer ? formatVisual(m.amount) : formatVisual(effect);
@@ -742,7 +778,7 @@ function updateUI() {
         body.innerHTML += `<tr class="${isCap ? 'row-cap-base' : (isCredit ? 'row-credit-pending' : '')}"><td style="white-space:nowrap">${getFormatedDate(m.date)}</td><td>${m.desc}<br><small>${displayMethod}${isCap ? ' [SALDO FIJADO]' : (isCredit ? ' [CRÉDITO PENDIENTE]' : '')}${usoExternoTag}${historialTag}</small></td><td style="text-align:center">${imgBtn}</td><td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${effectStr}</td><td style="text-align:right; white-space:nowrap;">${creditActionHtml}<button class="btn-icon" style="color:#0026ff" onclick="editMovement(${m.id})"><i class="fas fa-edit"></i></button><button class="btn-icon" style="color:#ff3b3b" onclick="deleteMovement(${m.id})"><i class="fas fa-trash"></i></button></td></tr>`;
     });
 
-    document.getElementById('mov-counter-val').innerText = renderedCount; const ctrlArea = document.getElementById('history-controls-area'); if (ctrlArea) { if (v === "" && movements.length > window.maxVisibleMovements) { ctrlArea.style.display = 'flex'; } else { ctrlArea.style.display = 'none'; } }
+    document.getElementById('mov-counter-val').innerText = renderedCount; const ctrlArea = document.getElementById('history-controls-area'); if (ctrlArea) { if (searchTerms.length === 0 && movements.length > window.maxVisibleMovements) { ctrlArea.style.display = 'flex'; } else { ctrlArea.style.display = 'none'; } }
     document.getElementById('val-bank').innerText = "₡" + formatVisual(mBank, 2); document.getElementById('val-cash').innerText = "₡" + formatVisual(mCash, 2); document.getElementById('total-balance').innerText = "₡" + formatVisual(mBank + mCash, 2); document.getElementById('net-profit').innerText = "₡" + formatVisual((tin - tout) + virtualProfitBase, 2);
 }
 
@@ -820,7 +856,7 @@ function processTableFile(input) {
     } 
 }
 
-function exportDataBackup() { const backupPackage = { version: "11.6", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_trash_planilla: trashPlanilla, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags, copo_deleted_shifts: deletedShiftIds }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); showMsg("Copia de seguridad exportada con éxito."); }
+function exportDataBackup() { const backupPackage = { version: "11.7", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_trash_planilla: trashPlanilla, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags, copo_deleted_shifts: deletedShiftIds }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); showMsg("Copia de seguridad exportada con éxito."); }
 function importDataBackup(input) { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const importedPackage = JSON.parse(e.target.result); if (!importedPackage.copo_data || !importedPackage.copo_pin_hash || !importedPackage.copo_staff) { return showMsg("Error: Archivo inválido."); } showConfirm("¿Está seguro de restaurar esta copia de seguridad?", () => { localStorage.setItem('copo_pin_hash', importedPackage.copo_pin_hash); localStorage.setItem('copo_data', JSON.stringify(importedPackage.copo_data)); localStorage.setItem('copo_staff', JSON.stringify(importedPackage.copo_staff)); localStorage.setItem('copo_cierres', JSON.stringify(importedPackage.copo_cierres || [])); localStorage.setItem('copo_trash', JSON.stringify(importedPackage.copo_trash || [])); localStorage.setItem('copo_trash_planilla', JSON.stringify(importedPackage.copo_trash_planilla || [])); localStorage.setItem('copo_virtual_profit', importedPackage.copo_virtual_profit || 0); localStorage.setItem('copo_last_reset', importedPackage.copo_last_reset || new Date(0).toISOString()); if(importedPackage.copo_tags) { localStorage.setItem('copo_tags', JSON.stringify(importedPackage.copo_tags)); savedTags = importedPackage.copo_tags; } localStorage.setItem('copo_deleted_shifts', JSON.stringify(importedPackage.copo_deleted_shifts || [])); let bData = importedPackage.bizData || { name: "Gestión Total", owner: "", logo: "", logoDriveId: "" }; localStorage.setItem('copo_biz_data', JSON.stringify(bData)); secure_pin_hash = importedPackage.copo_pin_hash; movements = importedPackage.copo_data; staff = importedPackage.copo_staff; cierres = importedPackage.cierres || []; trashMovements = importedPackage.copo_trash || []; trashPlanilla = importedPackage.copo_trash_planilla || []; virtualProfitBase = parseFloat(importedPackage.copo_virtual_profit || 0); lastResetDate = importedPackage.copo_last_reset || new Date(0).toISOString(); deletedShiftIds = importedPackage.copo_deleted_shifts || []; bizData = bData; if(bizData.name) document.getElementById('biz-name-input').value = bizData.name; if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner; applyBusinessIdentity(); userInterruptedClock = false; setMainDateToNow(); updateUI(); renderStaff(); syncToCloud(); showMsg("¡Restauración Completa!"); }); } catch (err) { showMsg("Error crítico al procesar el archivo."); } input.value = ""; }; reader.readAsText(file); }
 function filtrarMovimientos() { updateUI(); }
 
@@ -1187,15 +1223,46 @@ function verDetalleCierre(id) { const c = cierres.find(x => x.id === id); if(!c)
 function deleteCierre(id) { showConfirm("¿Eliminar este cierre?", () => { cierres = cierres.filter(c => c.id !== id); localStorage.setItem('copo_cierres', JSON.stringify(cierres)); closeModal('history-modal'); openCierreHistory(); }); }
 function resetPeriodProfit() { showConfirm("¿Deseas reiniciar las ganancias de este periodo?", () => { lastResetDate = new Date().toISOString(); virtualProfitBase = 0; localStorage.setItem('copo_last_reset', lastResetDate); localStorage.setItem('copo_virtual_profit', "0"); updateUI(); syncToCloud(); showMsg("Contador de ganancias netas reiniciado con éxito."); }); }
 
-function searchInPeriod() { 
-    const f = document.getElementById('c-from').value, t = document.getElementById('c-to').value, kw = document.getElementById('c-keyword').value.toLowerCase().trim(), incAdj = document.getElementById('include-adj-report').checked; if(!f || !t) return showMsg("Faltan fechas"); 
+function searchInPeriod(isAutoTrigger = false) { 
+    const f = document.getElementById('c-from').value, t = document.getElementById('c-to').value, kw = document.getElementById('c-keyword').value.toLowerCase().trim(), incAdj = document.getElementById('include-adj-report').checked; 
+    if(!f || !t) {
+        if (isAutoTrigger) return;
+        return showMsg("Faltan fechas"); 
+    }
+    
+    let searchTerms = [...cierreSearchTags.map(t => t.toLowerCase())];
+    if (kw !== "") searchTerms.push(kw);
+    
     let i=0, e=0, matches = []; const fT = new Date(f + "T00:00:00").toISOString(), tT = new Date(t + "T23:59:59").toISOString(); 
-    movements.forEach(m => { if(m.date >= fT && m.date <= tT) { if (m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') return; let buscaMetodo = m.method ? m.method.toLowerCase() : ""; let buscaDesc = m.desc ? m.desc.toLowerCase() : ""; let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : (m.type === 'TRANSFER' ? "mover dinero transferencia" : ""); if (buscaMetodo.includes("simpe") || buscaMetodo.includes("sinpe")) { buscaMetodo = "simpe sinpe"; } if (kw === "" || buscaDesc.includes(kw) || buscaMetodo.includes(kw) || buscaTipoUsExt.includes(kw)) { if (m.type === 'IN') { i += m.amount; matches.push(m); } else if (m.type === 'OUT') { e += m.amount; matches.push(m); } else if (m.type === 'ADJ_OUT') { if (incAdj || kw !== "") { e += m.amount; matches.push(m); } } } } }); 
-    const balanceCalculado = i - e; const notaPeriodo = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (kw !== "" ? ` - Filtro: "${kw}"` : "");
+    movements.forEach(m => { 
+        if(m.date >= fT && m.date <= tT) { 
+            if (m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') return; 
+            let buscaMetodo = m.method ? m.method.toLowerCase() : ""; let buscaDesc = m.desc ? m.desc.toLowerCase() : ""; let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : (m.type === 'TRANSFER' ? "mover dinero transferencia" : ""); 
+            let textLinea = `${buscaDesc} ${buscaMetodo} ${buscaTipoUsExt} ${m.type}`.toLowerCase();
+            
+            let match = true;
+            if (searchTerms.length > 0) {
+                match = searchTerms.some(term => {
+                    let isElec = term.includes("sinpe") || term.includes("simpe") || term.includes("simple");
+                    return isElec ? (textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple")) : textLinea.includes(term);
+                });
+            }
+            
+            if (match) { 
+                if (m.type === 'IN') { i += m.amount; matches.push(m); } 
+                else if (m.type === 'OUT') { e += m.amount; matches.push(m); } 
+                else if (m.type === 'ADJ_OUT') { 
+                    if (incAdj || searchTerms.length > 0) { e += m.amount; matches.push(m); } 
+                } 
+            } 
+        } 
+    }); 
+    const filterStr = searchTerms.join(", ");
+    const balanceCalculado = i - e; const notaPeriodo = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (filterStr !== "" ? ` - Filtro: "${filterStr}"` : "");
     let htmlDesglose = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;"><p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Periodo:</b> <small>${notaPeriodo}</small></p><hr style="border:1px solid #222; margin:10px 0;"><p class="profit" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Ingresos: ₡${formatVisual(i)}</p><p class="expense" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Egresos: ₡${formatVisual(e)}</p><div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;"><h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3><p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(balanceCalculado)}</p></div></div>`;
     let tablaFacturas = `<div class="history-wrapper" style="margin-top:15px; max-height:220px;"><table style="width:100%;"><thead><tr><th>Detalle</th><th style="text-align:center;">Fact.</th><th style="text-align:right;">Monto</th></tr></thead><tbody>`
     if(matches.length === 0) { tablaFacturas += `<tr><td colspan="3" style="text-align:center; color:#666; padding:15px;">Ningún documento coincide con el filtro</td></tr>`; } else { [...matches].reverse().forEach(m => { let eff = (m.type === 'IN' || m.type === 'ADJ_IN') ? m.amount : -m.amount; let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo')); let cCls = isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : 'profit'); let imgBtn = ""; if (m.img) { if (m.img.startsWith("http")) { imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`; } else { imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`; } } else { imgBtn = `<span style="color:#444; font-size:0.7rem;">S/F</span>`; } tablaFacturas += `<tr><td><small style="color:#888;">${getFormatedDate(m.date)}</small><br>${m.desc}</td><td style="text-align:center;">${imgBtn}</td><td class="${cCls}" style="text-align:right; font-weight:bold;">₡${formatVisual(eff)}</td></tr>`; }); } tablaFacturas += `</tbody></table></div>`;
-    openModal("Cierre de Periodo", htmlDesglose + tablaFacturas + `<button class="btn btn-in" style="margin-top:15px; margin-bottom:5px;" onclick="injectPeriodToDashboardProfit(${balanceCalculado}, '${f}', '${t}')">REFLEJAR GANANCIA EN PANEL</button><button class="btn btn-cap" style="background:#444; color:white;" onclick="saveHistoricalCierre('${f}', '${t}', ${balanceCalculado}, ${i}, ${e}, '${kw}')">GUARDAR ESTE REPORTE</button>`); 
+    openModal("Cierre de Periodo", htmlDesglose + tablaFacturas + `<button class="btn btn-in" style="margin-top:15px; margin-bottom:5px;" onclick="injectPeriodToDashboardProfit(${balanceCalculado}, '${f}', '${t}')">REFLEJAR GANANCIA EN PANEL</button><button class="btn btn-cap" style="background:#444; color:white;" onclick="saveHistoricalCierre('${f}', '${t}', ${balanceCalculado}, ${i}, ${e}, '${filterStr}')">GUARDAR ESTE REPORTE</button>`); 
 }
 
 function injectPeriodToDashboardProfit(amt, f, t) { virtualProfitBase += parseFloat(amt || 0); localStorage.setItem('copo_virtual_profit', virtualProfitBase); updateUI(); syncToCloud(); closeModal('history-modal'); showMsg("Ganancia consolidada exitosamente en el cuadro principal."); }
@@ -1209,6 +1276,81 @@ function openUsoExternoModal() { if(!document.getElementById('amount').value) re
 function openAjustesModal() { if(!document.getElementById('amount').value) return showMsg("Monto vacío"); document.getElementById('ajustes-modal').style.display = 'flex'; updateBodyScroll(); }
 
 function executeEntry(m, ot = null) { const t = ot || pendingType; let dsc = document.getElementById('desc').value; if(t === 'ADJ_OUT') { if(!dsc) dsc = 'Uso Externo Personal'; else if(!dsc.toLowerCase().includes('uso externo')) dsc = 'Uso Externo: ' + dsc; } else { if(!dsc) { if(t === 'CAP_BASE') dsc = 'Saldo Real Fijado'; else dsc = 'S/D'; } } const affect = document.getElementById('main-switch') ? document.getElementById('main-switch').checked : true; const userChosenDate = document.getElementById('main-date-input').value; const isoDateToSave = userChosenDate ? new Date(userChosenDate).toISOString() : new Date().toISOString(); const isHistoricalMove = isoDateToSave < lastResetDate; movements.unshift({ id: Date.now(), type: t, amount: cleanAmount(document.getElementById('amount').value), desc: dsc, method: m, date: isoDateToSave, img: "", affectProfit: affect, historical: isHistoricalMove }); localStorage.setItem('copo_data', JSON.stringify(movements)); updateUI(); closeMethodModal(); closeModal('uso-externo-modal'); closeModal('ajustes-modal'); document.getElementById('amount').value = ""; document.getElementById('desc').value = ""; userInterruptedClock = false; setMainDateToNow(); syncToCloud(); }
+
+// -------------------------------------------------------------
+// NUEVA LÓGICA DE BÚSQUEDA Y PÍLDORAS (INCLUSIVA: "O")
+// -------------------------------------------------------------
+function toggleSearchTagsDropdown(event, context) {
+    event.stopPropagation();
+    const ddId = context === 'main' ? 'main-search-tags-dropdown' : 'cierre-search-tags-dropdown';
+    const dropdown = document.getElementById(ddId);
+    
+    const otherDdId = context === 'main' ? 'cierre-search-tags-dropdown' : 'main-search-tags-dropdown';
+    const otherDropdown = document.getElementById(otherDdId);
+    if (otherDropdown) otherDropdown.style.display = 'none';
+    
+    const standardTags = document.getElementById('tags-dropdown');
+    if (standardTags) standardTags.style.display = 'none';
+
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        renderSearchTagsOptions(context);
+    }
+}
+
+function renderSearchTagsOptions(context) {
+    const ddId = context === 'main' ? 'main-search-tags-dropdown' : 'cierre-search-tags-dropdown';
+    const dropdown = document.getElementById(ddId);
+    dropdown.innerHTML = "";
+    savedTags.forEach(tag => {
+        const item = document.createElement('div');
+        item.className = 'tags-item';
+        item.innerHTML = `<span><i class="fas fa-tag" style="color: #0026ff; margin-right: 8px;"></i>${tag}</span>`;
+        item.onclick = () => addSearchTag(tag, context);
+        dropdown.appendChild(item);
+    });
+    dropdown.style.display = 'block';
+}
+
+function addSearchTag(tag, context) {
+    if (context === 'main') {
+        if (!mainSearchTags.includes(tag)) mainSearchTags.push(tag);
+        renderSearchPills('main');
+        filtrarMovimientos();
+    } else {
+        if (!cierreSearchTags.includes(tag)) cierreSearchTags.push(tag);
+        renderSearchPills('cierre');
+        searchInPeriod(true); 
+    }
+    const ddId = context === 'main' ? 'main-search-tags-dropdown' : 'cierre-search-tags-dropdown';
+    document.getElementById(ddId).style.display = 'none';
+}
+
+function removeSearchTag(tag, context) {
+    if (context === 'main') {
+        mainSearchTags = mainSearchTags.filter(t => t !== tag);
+        renderSearchPills('main');
+        filtrarMovimientos();
+    } else {
+        cierreSearchTags = cierreSearchTags.filter(t => t !== tag);
+        renderSearchPills('cierre');
+        searchInPeriod(true);
+    }
+}
+
+function renderSearchPills(context) {
+    const containerId = context === 'main' ? 'search-pills-container' : 'cierre-pills-container';
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+    const tags = context === 'main' ? mainSearchTags : cierreSearchTags;
+    tags.forEach(tag => {
+        const pill = document.createElement('div');
+        pill.className = 'search-pill';
+        pill.innerHTML = `<span>${tag}</span><span class="close-pill" onclick="removeSearchTag('${tag}', '${context}')">×</span>`;
+        container.appendChild(pill);
+    });
+}
 </script>
 </body>
 </html>

@@ -105,7 +105,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 <div id="login-screen">
     <div id="login-logo-area"></div>
-    <div class="version-tag">VERSIÓN 11.7 (CONEXIÓN PERMANENTE Y ETIQUETAS)</div>
+    <div class="version-tag">VERSIÓN 11.7.1 (FILTROS PRECISOS)</div>
     <input type="password" id="pin" class="pin-input" placeholder="****" maxlength="4" inputmode="numeric">
     <button class="btn btn-in" onclick="validatePin()">ENTRAR</button>
 </div>
@@ -267,7 +267,7 @@ input:checked + .slider:before { transform: translateX(20px); }
             </div>
         </div>
     </div>
-    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 11.7 (CONEXIÓN PERMANENTE Y ETIQUETAS)</div>
+    <div class="version-tag" style="margin-top: 20px;">VERSIÓN 11.7.1 (FILTROS PRECISOS)</div>
 </div>
 
 <div id="help-card"><span class="close-x" onclick="document.getElementById('help-card').style.display='none'">×</span><h3 id="help-title" style="color:#0026ff; margin-top:0;"></h3><p id="help-text" style="font-size:0.9rem; color:#ccc; line-height:1.4; margin-bottom:0;"></p></div>
@@ -749,25 +749,38 @@ function updateUI() {
     });
 
     const buscadorInp = document.getElementById('buscador'); const v = buscadorInp ? buscadorInp.value.toLowerCase().trim() : ""; 
-    let searchTerms = [...mainSearchTags.map(t => t.toLowerCase())];
-    if (v !== "") searchTerms.push(v);
+    let hasTags = mainSearchTags.length > 0;
+    let hasKw = v !== "";
     
     let renderedCount = 0; let displayMovements = [...movements]; displayMovements.sort((x, y) => { let diff = new Date(y.date) - new Date(x.date); if (diff === 0) return y.id - x.id; return diff; });
 
     displayMovements.forEach(m => {
         let isCap = m.type === 'CAP_BASE'; let isCredit = m.type === 'CREDIT_PENDING'; let isUsoExterno = m.type === 'ADJ_OUT'; let isTransfer = m.type === 'TRANSFER';
-        let buscaMetodo = m.method ? m.method.toLowerCase() : ""; let buscaDesc = m.desc ? m.desc.toLowerCase() : ""; let buscaTipoUsExt = isUsoExterno ? "uso externo gasto personal" : (isTransfer ? "mover dinero transferencia banco efectivo" : "");
+        let buscaMetodo = m.method ? m.method.toLowerCase() : ""; 
+        let buscaDesc = m.desc ? m.desc.toLowerCase() : ""; 
+        let buscaTipoUsExt = isUsoExterno ? "uso externo gasto personal" : (isTransfer ? "mover dinero transferencia banco efectivo" : "");
         let textLinea = `${buscaDesc} ${buscaMetodo} ${buscaTipoUsExt} ${m.type}`.toLowerCase();
         
         let match = true;
-        if (searchTerms.length > 0) {
-            match = searchTerms.some(term => {
-                let isElec = term.includes("sinpe") || term.includes("simpe") || term.includes("simple");
-                return isElec ? (textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple")) : textLinea.includes(term);
-            });
+        if (hasTags || hasKw) {
+            let tagMatch = true;
+            if (hasTags) {
+                // AQUÍ ESTÁ LA MAGIA: Solo busca las etiquetas dentro de la descripción (buscaDesc)
+                tagMatch = mainSearchTags.some(tag => buscaDesc.includes(tag.toLowerCase()));
+            }
+            
+            let kwMatch = true;
+            if (hasKw) {
+                // Aquí se mantiene la tolerancia del teclado por si escribes a mano "simple"
+                let isElec = v.includes("sinpe") || v.includes("simpe") || v.includes("simple");
+                kwMatch = isElec ? (textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple")) : textLinea.includes(v);
+            }
+            
+            match = tagMatch && kwMatch;
         }
         
-        if (!match) return; if (searchTerms.length === 0 && renderedCount >= window.maxVisibleMovements) return; renderedCount++;
+        if (!match) return; if (!hasTags && !hasKw && renderedCount >= window.maxVisibleMovements) return; renderedCount++;
+        
         let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo'));
         let effect = (m.type === 'IN' || m.type === 'ADJ_IN' || m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') ? m.amount : -m.amount;
         let effectStr = isTransfer ? formatVisual(m.amount) : formatVisual(effect);
@@ -778,7 +791,7 @@ function updateUI() {
         body.innerHTML += `<tr class="${isCap ? 'row-cap-base' : (isCredit ? 'row-credit-pending' : '')}"><td style="white-space:nowrap">${getFormatedDate(m.date)}</td><td>${m.desc}<br><small>${displayMethod}${isCap ? ' [SALDO FIJADO]' : (isCredit ? ' [CRÉDITO PENDIENTE]' : '')}${usoExternoTag}${historialTag}</small></td><td style="text-align:center">${imgBtn}</td><td class="${colorClass}" style="text-align:right; font-weight:bold;">₡${effectStr}</td><td style="text-align:right; white-space:nowrap;">${creditActionHtml}<button class="btn-icon" style="color:#0026ff" onclick="editMovement(${m.id})"><i class="fas fa-edit"></i></button><button class="btn-icon" style="color:#ff3b3b" onclick="deleteMovement(${m.id})"><i class="fas fa-trash"></i></button></td></tr>`;
     });
 
-    document.getElementById('mov-counter-val').innerText = renderedCount; const ctrlArea = document.getElementById('history-controls-area'); if (ctrlArea) { if (searchTerms.length === 0 && movements.length > window.maxVisibleMovements) { ctrlArea.style.display = 'flex'; } else { ctrlArea.style.display = 'none'; } }
+    document.getElementById('mov-counter-val').innerText = renderedCount; const ctrlArea = document.getElementById('history-controls-area'); if (ctrlArea) { if (!hasTags && !hasKw && movements.length > window.maxVisibleMovements) { ctrlArea.style.display = 'flex'; } else { ctrlArea.style.display = 'none'; } }
     document.getElementById('val-bank').innerText = "₡" + formatVisual(mBank, 2); document.getElementById('val-cash').innerText = "₡" + formatVisual(mCash, 2); document.getElementById('total-balance').innerText = "₡" + formatVisual(mBank + mCash, 2); document.getElementById('net-profit').innerText = "₡" + formatVisual((tin - tout) + virtualProfitBase, 2);
 }
 
@@ -856,7 +869,7 @@ function processTableFile(input) {
     } 
 }
 
-function exportDataBackup() { const backupPackage = { version: "11.7", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_trash_planilla: trashPlanilla, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags, copo_deleted_shifts: deletedShiftIds }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); showMsg("Copia de seguridad exportada con éxito."); }
+function exportDataBackup() { const backupPackage = { version: "11.7.1", exportDate: new Date().toISOString(), copo_pin_hash: secure_pin_hash, copo_data: movements, copo_staff: staff, copo_cierres: cierres, copo_trash: trashMovements, copo_trash_planilla: trashPlanilla, copo_virtual_profit: virtualProfitBase, copo_last_reset: lastResetDate, bizData: bizData, copo_tags: savedTags, copo_deleted_shifts: deletedShiftIds }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `Respaldo_Contable_GestionTotal_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); showMsg("Copia de seguridad exportada con éxito."); }
 function importDataBackup(input) { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const importedPackage = JSON.parse(e.target.result); if (!importedPackage.copo_data || !importedPackage.copo_pin_hash || !importedPackage.copo_staff) { return showMsg("Error: Archivo inválido."); } showConfirm("¿Está seguro de restaurar esta copia de seguridad?", () => { localStorage.setItem('copo_pin_hash', importedPackage.copo_pin_hash); localStorage.setItem('copo_data', JSON.stringify(importedPackage.copo_data)); localStorage.setItem('copo_staff', JSON.stringify(importedPackage.copo_staff)); localStorage.setItem('copo_cierres', JSON.stringify(importedPackage.copo_cierres || [])); localStorage.setItem('copo_trash', JSON.stringify(importedPackage.copo_trash || [])); localStorage.setItem('copo_trash_planilla', JSON.stringify(importedPackage.copo_trash_planilla || [])); localStorage.setItem('copo_virtual_profit', importedPackage.copo_virtual_profit || 0); localStorage.setItem('copo_last_reset', importedPackage.copo_last_reset || new Date(0).toISOString()); if(importedPackage.copo_tags) { localStorage.setItem('copo_tags', JSON.stringify(importedPackage.copo_tags)); savedTags = importedPackage.copo_tags; } localStorage.setItem('copo_deleted_shifts', JSON.stringify(importedPackage.copo_deleted_shifts || [])); let bData = importedPackage.bizData || { name: "Gestión Total", owner: "", logo: "", logoDriveId: "" }; localStorage.setItem('copo_biz_data', JSON.stringify(bData)); secure_pin_hash = importedPackage.copo_pin_hash; movements = importedPackage.copo_data; staff = importedPackage.copo_staff; cierres = importedPackage.cierres || []; trashMovements = importedPackage.copo_trash || []; trashPlanilla = importedPackage.copo_trash_planilla || []; virtualProfitBase = parseFloat(importedPackage.copo_virtual_profit || 0); lastResetDate = importedPackage.copo_last_reset || new Date(0).toISOString(); deletedShiftIds = importedPackage.copo_deleted_shifts || []; bizData = bData; if(bizData.name) document.getElementById('biz-name-input').value = bizData.name; if(bizData.owner) document.getElementById('owner-name-input').value = bizData.owner; applyBusinessIdentity(); userInterruptedClock = false; setMainDateToNow(); updateUI(); renderStaff(); syncToCloud(); showMsg("¡Restauración Completa!"); }); } catch (err) { showMsg("Error crítico al procesar el archivo."); } input.value = ""; }; reader.readAsText(file); }
 function filtrarMovimientos() { updateUI(); }
 
@@ -1230,35 +1243,50 @@ function searchInPeriod(isAutoTrigger = false) {
         return showMsg("Faltan fechas"); 
     }
     
-    let searchTerms = [...cierreSearchTags.map(t => t.toLowerCase())];
-    if (kw !== "") searchTerms.push(kw);
+    let hasTags = cierreSearchTags.length > 0;
+    let hasKw = kw !== "";
     
     let i=0, e=0, matches = []; const fT = new Date(f + "T00:00:00").toISOString(), tT = new Date(t + "T23:59:59").toISOString(); 
     movements.forEach(m => { 
         if(m.date >= fT && m.date <= tT) { 
             if (m.type === 'CAP_BASE' || m.type === 'CREDIT_PENDING') return; 
-            let buscaMetodo = m.method ? m.method.toLowerCase() : ""; let buscaDesc = m.desc ? m.desc.toLowerCase() : ""; let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : (m.type === 'TRANSFER' ? "mover dinero transferencia" : ""); 
+            let buscaMetodo = m.method ? m.method.toLowerCase() : ""; 
+            let buscaDesc = m.desc ? m.desc.toLowerCase() : ""; 
+            let buscaTipoUsExt = (m.type === 'ADJ_OUT') ? "uso externo gasto personal" : (m.type === 'TRANSFER' ? "mover dinero transferencia" : ""); 
             let textLinea = `${buscaDesc} ${buscaMetodo} ${buscaTipoUsExt} ${m.type}`.toLowerCase();
             
             let match = true;
-            if (searchTerms.length > 0) {
-                match = searchTerms.some(term => {
-                    let isElec = term.includes("sinpe") || term.includes("simpe") || term.includes("simple");
-                    return isElec ? (textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple")) : textLinea.includes(term);
-                });
+            if (hasTags || hasKw) {
+                let tagMatch = true;
+                if (hasTags) {
+                    // Magia aquí también: Las etiquetas solo buscan en el detalle escrito (buscaDesc)
+                    tagMatch = cierreSearchTags.some(tag => buscaDesc.includes(tag.toLowerCase()));
+                }
+                
+                let kwMatch = true;
+                if (hasKw) {
+                    let isElec = kw.includes("sinpe") || kw.includes("simpe") || kw.includes("simple");
+                    kwMatch = isElec ? (textLinea.includes("sinpe") || textLinea.includes("simpe") || textLinea.includes("simple")) : textLinea.includes(kw);
+                }
+                
+                match = tagMatch && kwMatch;
             }
             
             if (match) { 
                 if (m.type === 'IN') { i += m.amount; matches.push(m); } 
                 else if (m.type === 'OUT') { e += m.amount; matches.push(m); } 
                 else if (m.type === 'ADJ_OUT') { 
-                    if (incAdj || searchTerms.length > 0) { e += m.amount; matches.push(m); } 
+                    if (incAdj || hasTags || hasKw) { e += m.amount; matches.push(m); } 
                 } 
             } 
         } 
     }); 
-    const filterStr = searchTerms.join(", ");
-    const balanceCalculado = i - e; const notaPeriodo = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (filterStr !== "" ? ` - Filtro: "${filterStr}"` : "");
+    const filterParts = [];
+    if (hasTags) filterParts.push(cierreSearchTags.join(", "));
+    if (hasKw) filterParts.push(`"${kw}"`);
+    const filterStr = filterParts.join(" + ");
+    
+    const balanceCalculado = i - e; const notaPeriodo = `Del ${formatDateSlash(f)} al ${formatDateSlash(t)}` + (filterStr !== "" ? ` - Filtro: ${filterStr}` : "");
     let htmlDesglose = `<div style="background:#000; padding:15px; border-radius:10px; text-align:left;"><p style="margin:0 0 10px 0; font-size:0.85rem; color:#888;"><b>Periodo:</b> <small>${notaPeriodo}</small></p><hr style="border:1px solid #222; margin:10px 0;"><p class="profit" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Ingresos: ₡${formatVisual(i)}</p><p class="expense" style="font-weight:bold; font-size:1.1rem; margin:5px 0;">Egresos: ₡${formatVisual(e)}</p><div class="card balance" style="border:1px solid #0026ff; background:rgba(0, 38, 255, 0.08); padding:12px; border-radius:8px; text-align:center; margin-top:15px;"><h3 style="margin:0; font-size:0.75rem; color:#888; text-transform:uppercase;">Balance</h3><p class="bank-color" style="margin:5px 0 0 0; font-size:1.3rem; font-weight:bold;">₡${formatVisual(balanceCalculado)}</p></div></div>`;
     let tablaFacturas = `<div class="history-wrapper" style="margin-top:15px; max-height:220px;"><table style="width:100%;"><thead><tr><th>Detalle</th><th style="text-align:center;">Fact.</th><th style="text-align:right;">Monto</th></tr></thead><tbody>`
     if(matches.length === 0) { tablaFacturas += `<tr><td colspan="3" style="text-align:center; color:#666; padding:15px;">Ningún documento coincide con el filtro</td></tr>`; } else { [...matches].reverse().forEach(m => { let eff = (m.type === 'IN' || m.type === 'ADJ_IN') ? m.amount : -m.amount; let isAguinaldo = m.type === 'AGUINALDO' || m.type === 'PAYMENT_AGUINALDO' || (m.desc && m.desc.toLowerCase().includes('aguinaldo')); let cCls = isAguinaldo ? 'aguinaldo-color' : ((m.type === 'OUT' || m.type === 'ADJ_OUT') ? 'expense' : 'profit'); let imgBtn = ""; if (m.img) { if (m.img.startsWith("http")) { imgBtn = `<button class="btn-add-img" onclick="zoomImage('${m.img}', ${m.id})" style="color:#25D366; font-size:1.1rem; background:none; border:none; padding:0; cursor:pointer;"><i class="fas fa-file-invoice"></i></button>`; } else { imgBtn = `<img src="${m.img}" class="img-preview-mini" onclick="zoomImage('${m.img}', ${m.id})">`; } } else { imgBtn = `<span style="color:#444; font-size:0.7rem;">S/F</span>`; } tablaFacturas += `<tr><td><small style="color:#888;">${getFormatedDate(m.date)}</small><br>${m.desc}</td><td style="text-align:center;">${imgBtn}</td><td class="${cCls}" style="text-align:right; font-weight:bold;">₡${formatVisual(eff)}</td></tr>`; }); } tablaFacturas += `</tbody></table></div>`;
